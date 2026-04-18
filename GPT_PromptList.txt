@@ -1,0 +1,478 @@
+I’ve reviewed the hackathon problem statement for the Zoho Recruit Sourcing Tool. The goal is: ingest a JD, parse it with an LLM, search Wissen’s Zoho Recruit ATS via API, rank candidates with match %, and return a recruiter-ready ranked contact list (without outreach automation) .
+
+Since Claude Code CLI is mandatory, the winning strategy is not “just build an app,” but to use Claude Code like a senior AI engineer + hackathon architect—fast iteration, production-ready structure, excellent prompts, and demo-focused delivery.
+
+---
+
+# Winning Strategy
+
+Your goal should be:
+
+**Build an AI-first recruiter copilot, not just a search app**
+
+That means:
+
+* JD → structured extraction
+* AI-generated smart search filters
+* Zoho Recruit API retrieval
+* Hybrid ranking (semantic + rule-based)
+* Recruiter-ready dashboard
+* Strong explainability (“why matched”)
+* Beautiful demo + markdown architecture
+
+This is what wins hackathons.
+
+---
+
+# Recommended Stack (Best for Claude Code)
+
+Use:
+
+* Frontend: Next.js + Tailwind + shadcn/ui
+* Backend: FastAPI OR Next.js API routes
+* DB/Cache: Redis (optional)
+* Vector Search: pgvector / Pinecone / local embeddings
+* LLM: Claude API (best for prompting quality)
+* Embeddings: OpenAI text-embedding-3-large OR Voyage AI
+* Auth: Internal only (simple)
+* Deployment: Vercel + Railway / Render
+* Zoho Recruit API: OAuth 2.0 REST API
+
+Claude Code works extremely well with:
+
+* TypeScript
+* Next.js
+* Python FastAPI
+* well-structured monorepo
+
+I recommend:
+
+# BEST OPTION
+
+## Monorepo Structure
+
+```text
+zoho-recruit-ai/
+│
+├── frontend/        (Next.js)
+├── backend/         (FastAPI)
+├── docs/
+├── prompts/
+├── scripts/
+├── README.md
+└── architecture.md
+```
+
+This is hackathon-winning structure.
+
+---
+
+# STEP-BY-STEP CLAUDE CODE GUIDE
+
+---
+
+# STEP 1 — Initialize Project
+
+## Prompt for Claude Code
+
+```text
+Create a production-grade monorepo for a hackathon project called "Zoho Recruit AI Sourcing Tool".
+
+Requirements:
+- frontend: Next.js 15 + TypeScript + Tailwind + shadcn/ui
+- backend: FastAPI + Python + modular architecture
+- support Zoho Recruit API integration
+- support Claude API integration
+- support vector similarity ranking
+- clean architecture for hackathon demo
+- recruiter dashboard UI
+- candidate ranking system
+- docs folder for architecture and prompts
+
+Create folder structure, initial files, environment setup, and scalable architecture.
+
+Focus on:
+- speed of development
+- hackathon demo readiness
+- production quality structure
+
+Avoid overengineering.
+```
+
+---
+
+# STEP 2 — JD Parser Engine
+
+This is your most important LLM prompt.
+
+## Claude Code Prompt
+
+```text
+Build a Job Description parser service using Claude API.
+
+Input:
+Raw job description text
+
+Output structured JSON:
+{
+  "role_title": "",
+  "experience_required": "",
+  "must_have_skills": [],
+  "good_to_have_skills": [],
+  "education": "",
+  "location": "",
+  "notice_period_preference": "",
+  "domain_experience": [],
+  "seniority_level": "",
+  "mandatory_keywords": [],
+  "search_synonyms": []
+}
+
+Requirements:
+- handle poorly written JDs
+- infer hidden requirements
+- normalize skill names
+- generate synonyms for better ATS search
+- detect implicit seniority
+- optimize output for ATS search filters
+
+Add retries, validation, and fallback parsing.
+```
+
+---
+
+# STEP 3 — Elite Prompt for JD Parsing (SAVE THIS)
+
+Create `/prompts/jd_parser.txt`
+
+```text
+You are an expert technical recruiter and talent intelligence specialist.
+
+Your job is to convert a raw Job Description into precise structured hiring intelligence for searching an ATS.
+
+Rules:
+- infer implicit requirements
+- normalize technologies (React.js = React)
+- detect seniority from wording
+- identify mandatory vs optional skills
+- generate search synonyms recruiters use
+- prioritize hiring-critical requirements
+- avoid hallucinations
+- output only valid JSON
+
+Think like:
+- a senior recruiter
+- a sourcing specialist
+- an ATS search expert
+
+Return recruiter-grade structured output.
+```
+
+This alone can win prompt quality scoring.
+
+---
+
+# STEP 4 — Zoho Recruit Integration
+
+## Claude Code Prompt
+
+```text
+Build a production-ready Zoho Recruit API integration module.
+
+Requirements:
+- OAuth 2.0 refresh token flow
+- token auto-refresh
+- candidate search endpoint
+- candidate details endpoint
+- pagination handling
+- retry handling
+- rate limit handling
+- logging
+- structured error handling
+
+Support:
+- search by skills
+- search by experience
+- search by location
+- keyword combinations
+- boolean search logic
+
+Create clean service classes and reusable API client.
+```
+
+---
+
+# STEP 5 — LLM Search Query Generator
+
+This is where most teams fail.
+
+You must outperform them here.
+
+## Claude Code Prompt
+
+```text
+Build an AI-powered ATS search query generator.
+
+Input:
+Structured JD JSON
+
+Output:
+Optimized Zoho Recruit search filters:
+- boolean keyword queries
+- skill combinations
+- fallback broad search queries
+- precision search queries
+- high recall queries
+
+Requirements:
+- maximize candidate discovery
+- minimize irrelevant profiles
+- support multiple fallback search strategies
+- handle synonyms intelligently
+- prioritize must-have skills
+
+Generate:
+1. strict search
+2. balanced search
+3. broad search
+
+for ATS retrieval optimization.
+```
+
+This is huge for scoring.
+
+---
+
+# STEP 6 — Candidate Ranking Engine
+
+## Claude Code Prompt
+
+```text
+Build a hybrid candidate ranking engine.
+
+Input:
+- JD structured JSON
+- candidate profiles from Zoho Recruit
+
+Output:
+{
+  "candidate_name": "",
+  "match_percentage": 0,
+  "matched_skills": [],
+  "missing_skills": [],
+  "strengths": [],
+  "risks": [],
+  "explanation": ""
+}
+
+Scoring should combine:
+- semantic similarity
+- must-have skill match
+- experience match
+- seniority fit
+- domain relevance
+- education fit
+- location preference
+- notice period relevance
+
+Avoid fake high scores.
+Match percentage must be recruiter-trustworthy.
+
+Add explainable ranking.
+```
+
+---
+
+# STEP 7 — Secret Weapon (Hackathon Winner)
+
+## Add “Why Not Fit”
+
+Judges LOVE this.
+
+Prompt:
+
+```text
+Add explainable rejection reasons for low-ranked candidates.
+
+Examples:
+- missing mandatory Java skill
+- only 2 years experience vs required 6+
+- no fintech domain experience
+- location mismatch
+
+This improves recruiter trust dramatically.
+```
+
+This wins demos.
+
+---
+
+# STEP 8 — Frontend Dashboard
+
+## Claude Code Prompt
+
+```text
+Build a premium recruiter dashboard UI.
+
+Features:
+- paste JD input
+- upload JD PDF/DOCX
+- parse JD button
+- ranked candidate table
+- candidate match score cards
+- explanation modal
+- matched vs missing skills
+- recruiter-ready contact details
+- export CSV button
+- loading states
+- modern premium design
+
+Design should feel like:
+LinkedIn Recruiter + Cursor + Linear
+
+Make it hackathon-winning visually.
+```
+
+---
+
+# STEP 9 — CSV Export
+
+Judges love practical features.
+
+```text
+Add recruiter export:
+CSV + Excel download
+
+Fields:
+- candidate name
+- email
+- phone
+- current company
+- total experience
+- match %
+- matched skills
+- recruiter notes
+```
+
+---
+
+# STEP 10 — README That Wins
+
+## Claude Code Prompt
+
+```text
+Write a hackathon-winning README.md
+
+Include:
+- problem statement
+- architecture diagram
+- why this solution wins
+- prompt engineering strategy
+- Zoho API flow
+- ranking methodology
+- edge cases handled
+- deployment steps
+- demo script for judges
+- future improvements
+
+Make it impressive and investor-grade.
+```
+
+---
+
+# EDGE CASES (VERY IMPORTANT)
+
+Tell Claude:
+
+```text
+Handle these edge cases:
+- badly written JD
+- missing experience requirement
+- multiple locations
+- conflicting requirements
+- huge candidate result sets
+- duplicate candidates
+- stale candidate profiles
+- candidates with missing phone/email
+- rate limits
+- expired Zoho tokens
+- API failures
+- partial ATS data
+- hallucinated skill extraction prevention
+```
+
+This is what most teams forget.
+
+---
+
+# FINAL HACKATHON SECRET
+
+Add:
+
+## “Top 3 Hidden Candidates”
+
+Prompt:
+
+```text
+Surface strong non-obvious candidates
+who may not keyword-match perfectly
+but are semantically excellent fits.
+```
+
+This is insanely impressive.
+
+Judges remember this.
+
+---
+
+# Your Demo Flow Should Be
+
+### 3-minute killer demo
+
+JD pasted →
+
+AI parses →
+
+Zoho search →
+
+Smart ranking →
+
+Top candidates →
+
+Why matched →
+
+Why not matched →
+
+Export CSV →
+
+Done.
+
+That wins.
+
+---
+
+# My Honest Advice
+
+Do NOT build too much.
+
+Build:
+
+## 20% features
+
+that give
+
+## 80% demo impact
+
+That wins hackathons.
+
+Not complexity.
+
+---
+
+The strongest scoring area here will be:
+
+# PROMPTS + MATCH ACCURCY + DEMO
+
+not code volume.
+
+That’s where Claude Code should dominate.

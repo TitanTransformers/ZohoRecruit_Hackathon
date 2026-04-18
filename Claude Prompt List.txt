@@ -1,0 +1,465 @@
+# Zoho Recruit Sourcing Tool — Claude Code Hackathon Playbook
+
+Here's your complete step-by-step guide with every prompt you'll need to paste into Claude Code CLI.
+
+---
+
+## 🏗️ Phase 0 — Setup Before You Open Claude Code
+
+Before touching Claude Code, have these ready:
+- Anthropic API key (from organizers)
+- Zoho OAuth credentials (Client ID, Client Secret, Refresh Token)
+- Zoho instance URL (e.g., `recruit.zoho.in` or `recruit.zoho.com`)
+- Node.js 18+ installed
+
+```bash
+# Install Claude Code CLI
+npm install -g @anthropic-ai/claude-code
+
+# Create project folder
+mkdir zoho-recruit-sourcer && cd zoho-recruit-sourcer
+
+# Launch Claude Code
+claude
+```
+
+---
+
+## 📋 Phase 1 — Project Scaffolding
+
+### Prompt 1.1 — Bootstrap the entire project structure
+
+```
+You are an expert full-stack developer. Scaffold a production-quality Node.js + TypeScript project called "zoho-recruit-sourcer" with the following structure:
+
+- /src
+  - /api          → Zoho Recruit REST API client
+  - /auth         → Zoho OAuth2 token management
+  - /llm          → Anthropic Claude API integration
+  - /pipeline     → JD parsing, search, ranking orchestration
+  - /output       → Result formatting
+  - /utils        → Logger, retry logic, rate limiter
+- /prompts        → All LLM system/user prompt templates as .txt files
+- /tests          → Unit and integration tests using Vitest
+- .env.example
+- README.md
+- data-flow.md
+
+Use:
+- TypeScript with strict mode
+- axios for HTTP
+- zod for schema validation
+- winston for structured logging
+- dotenv for env management
+- Vitest for testing
+
+Generate package.json, tsconfig.json, .env.example (with placeholders for ANTHROPIC_API_KEY, ZOHO_CLIENT_ID, ZOHO_CLIENT_SECRET, ZOHO_REFRESH_TOKEN, ZOHO_DOMAIN, ZOHO_REDIRECT_URI), and a root index.ts CLI entrypoint that accepts a JD file path as argv.
+```
+
+---
+
+### Prompt 1.2 — Auth module
+
+```
+In /src/auth/zohoAuth.ts, implement a Zoho OAuth2 token manager with:
+
+1. A ZohoAuthManager class that:
+   - Stores the refresh token, client ID, client secret, and domain from env
+   - Has a getAccessToken() method that:
+     * Checks if current access token is valid (not expired, with 60s buffer)
+     * If expired or missing, calls POST https://{ZOHO_DOMAIN}/oauth/v2/token with grant_type=refresh_token
+     * Caches the new token with its expiry timestamp
+     * Returns the valid access token
+   - Has a refreshAccessToken() private method
+   - Retries up to 3 times on network failure with exponential backoff
+
+2. Export a singleton instance
+
+3. Handle these edge cases:
+   - Zoho returns 401 mid-session (token invalidated externally) → force refresh
+   - Refresh token itself is expired → throw a descriptive AuthError with remediation message
+   - Network timeout → retry with backoff, then throw
+
+4. Write a unit test in /tests/auth.test.ts that mocks axios and tests: valid cache hit, expired token refresh, retry on failure.
+```
+
+---
+
+## 📋 Phase 2 — Zoho API Client
+
+### Prompt 2.1 — Core API client with pagination
+
+```
+In /src/api/zohoClient.ts, build a robust Zoho Recruit API client class ZohoRecruitClient with these methods:
+
+1. searchCandidates(filters: SearchFilters): Promise<Candidate[]>
+   - POST to /recruit/v2/Candidates/search
+   - Accepts filters: { skills?: string[], experience_min?: number, experience_max?: number, keywords?: string[], location?: string }
+   - Handles pagination automatically: loop through pages (200 records/page max) until all results fetched or a cap of 1000 records
+   - Returns normalized Candidate[] array
+
+2. getCandidateDetails(candidateId: string): Promise<CandidateDetail>
+   - GET /recruit/v2/Candidates/{id}
+   - Returns full profile including skills, experience, current_employer, email, mobile
+
+3. searchByKeyword(query: string): Promise<Candidate[]>
+   - GET /recruit/v2/Candidates/search?criteria=...
+   - Builds Zoho COQL-style criteria string from the query
+
+4. Define TypeScript interfaces:
+   - SearchFilters, Candidate, CandidateDetail in /src/api/types.ts
+
+5. All methods must:
+   - Auto-inject Bearer token via ZohoAuthManager
+   - Retry 3x on 429 (rate limit) with Retry-After header respect
+   - Retry 2x on 5xx with exponential backoff
+   - Log each request/response summary via winston (no PII in logs at INFO level, full detail at DEBUG)
+   - Throw typed errors: ZohoApiError, RateLimitError, NotFoundError
+
+6. Write integration test stubs in /tests/zohoClient.test.ts using msw (mock service worker) to mock the Zoho endpoints.
+```
+
+---
+
+## 📋 Phase 3 — LLM Integration
+
+### Prompt 3.1 — JD Parser using Claude
+
+```
+In /src/llm/jdParser.ts, implement a JDParser class that uses the Anthropic Messages API (claude-sonnet-4-20250514) to extract structured data from a raw Job Description string.
+
+The parsed output must conform to this Zod schema (define in /src/llm/schemas.ts):
+{
+  role_title: string,
+  required_skills: string[],       // e.g. ["Java", "Spring Boot", "Microservices"]
+  preferred_skills: string[],
+  min_experience_years: number,
+  max_experience_years: number,
+  education_requirements: string[],
+  domain_keywords: string[],       // e.g. ["banking", "BFSI", "capital markets"]
+  seniority_level: "junior" | "mid" | "senior" | "lead" | "architect",
+  location_preference: string | null,
+  must_have: string[],             // non-negotiable requirements
+  nice_to_have: string[]
+}
+
+Implementation requirements:
+1. Read the system prompt from /prompts/jd_parser_system.txt
+2. Send the raw JD as user message
+3. Instruct the model to respond ONLY in valid JSON matching the schema above
+4. Parse and validate response with Zod — if validation fails, retry once with an error-correction prompt
+5. Handle: empty JD, JD in non-English, extremely long JD (>8000 tokens — chunk it)
+6. Log token usage per call
+
+Also create /prompts/jd_parser_system.txt with an expert-crafted system prompt. The prompt must:
+- Instruct the model to act as a senior technical recruiter and skills taxonomy expert
+- Emphasize extracting implicit skills (e.g. "financial domain experience" implies knowledge of FIX protocol, trade lifecycle)
+- Distinguish must-have vs nice-to-have from JD language cues ("must", "required", "preferred", "plus")
+- Output ONLY raw JSON, no markdown fences, no explanation
+```
+
+---
+
+### Prompt 3.2 — Search Query Generator
+
+```
+In /src/llm/queryGenerator.ts, implement a SearchQueryGenerator class that takes the parsed JD (ParsedJD type) and generates optimized Zoho Recruit search parameters.
+
+Method: generateSearchStrategies(parsedJD: ParsedJD): Promise<SearchStrategy[]>
+
+It must return an array of 3 search strategies ordered by precision → recall:
+1. PRECISION: Top 5 must-have skills + exact experience range
+2. BALANCED: Top 8 skills (required + preferred) + relaxed experience (±2 years)  
+3. RECALL: Domain keywords + seniority level + broad skill terms
+
+Each SearchStrategy has:
+{
+  strategy_name: "precision" | "balanced" | "recall",
+  filters: SearchFilters,
+  zoho_criteria_string: string,   // Zoho COQL format: ((Skill_Set:contains:Java) AND (Experience:>=:5))
+  rationale: string
+}
+
+Use Claude to generate the COQL criteria strings. Read system prompt from /prompts/query_generator_system.txt.
+
+Create /prompts/query_generator_system.txt that instructs Claude to:
+- Know Zoho Recruit COQL syntax: field:operator:value, AND/OR, parentheses grouping
+- Valid operators: equals, contains, starts_with, between, >=, <=
+- Key Zoho Candidate fields: Skill_Set, Experience_in_Months, Current_Location, Highest_Qualification, Candidate_Status
+- Generate syntactically valid COQL — no hallucinated field names
+- Include a self-check step before outputting
+- Output only valid JSON array
+```
+
+---
+
+### Prompt 3.3 — Candidate Ranker
+
+```
+In /src/llm/candidateRanker.ts, implement a CandidateRanker class.
+
+Method: rankCandidates(candidates: CandidateDetail[], parsedJD: ParsedJD): Promise<RankedCandidate[]>
+
+Algorithm (hybrid — do NOT use LLM for every candidate, it's too expensive):
+
+Step 1 — Keyword Scoring (no LLM, fast):
+For each candidate compute:
+- skill_match_score: (matched required skills / total required skills) * 60
+- experience_score: 20 if in range, 10 if ±2 years, 0 if far off
+- domain_score: (matched domain keywords / total domain keywords) * 20
+- keyword_total = skill_match_score + experience_score + domain_score
+
+Step 2 — LLM Deep Scoring (only for top 20 by keyword_total):
+Send batches of 5 candidates to Claude with the JD. Claude scores each 0-100 and provides:
+- match_percentage: number
+- matched_skills: string[]
+- missing_critical_skills: string[]
+- fit_summary: string (2 sentences max)
+- recommendation: "strong_fit" | "possible_fit" | "weak_fit"
+
+Step 3 — Final Score:
+final_score = (keyword_total * 0.4) + (llm_score * 0.6)
+
+Return RankedCandidate[] sorted by final_score descending.
+
+Read LLM system prompt from /prompts/ranker_system.txt.
+
+Create /prompts/ranker_system.txt that:
+- Instructs Claude to act as an unbiased technical screening expert
+- Score based ONLY on technical fit, not name/gender/age signals
+- Be calibrated: 90%+ = exceptional match, 70-89% = strong, 50-69% = possible, <50 = weak
+- Return only JSON array, strictly no explanation outside JSON
+- Include confidence field if evidence for a skill is ambiguous
+```
+
+---
+
+## 📋 Phase 4 — Pipeline Orchestration
+
+### Prompt 4.1 — Main pipeline
+
+```
+In /src/pipeline/sourcingPipeline.ts, implement the SourcingPipeline class that orchestrates the full end-to-end flow:
+
+async run(jdText: string): Promise<SourcingResult>
+
+Flow:
+1. Parse JD → JDParser.parse(jdText) → ParsedJD
+2. Generate search strategies → SearchQueryGenerator.generateSearchStrategies(parsedJD) → SearchStrategy[]
+3. Execute searches in sequence (precision first):
+   a. Run precision search → collect candidates
+   b. If results < 10, run balanced search → merge + deduplicate by candidateId
+   c. If results still < 10, run recall search → merge + deduplicate
+   d. Cap total unique candidates at 100 before ranking
+4. Fetch full details for each candidate (with concurrency limit of 5 parallel requests)
+5. Rank candidates → CandidateRanker.rankCandidates()
+6. Return SourcingResult
+
+SourcingResult type:
+{
+  job_title: string,
+  total_searched: number,
+  total_ranked: number,
+  search_strategies_used: string[],
+  candidates: RankedCandidate[],
+  execution_time_ms: number,
+  token_usage: { input: number, output: number, cost_usd: number }
+}
+
+Edge cases to handle:
+- Zero results from all 3 strategies → return empty list with a suggestions field explaining what search terms were tried
+- Zoho API down → fail fast with clear error, do not call LLM
+- JD too vague (parsed JD has < 3 required skills) → prompt user to provide more detail, still proceed with what's available
+- Duplicate candidates across strategies → deduplicate by email OR phone (not just ID)
+- Concurrency: use p-limit to cap parallel Zoho detail fetches at 5
+```
+
+---
+
+## 📋 Phase 5 — Output & CLI
+
+### Prompt 5.1 — Output formatter
+
+```
+In /src/output/formatter.ts, implement three output formatters for SourcingResult:
+
+1. formatTable(result: SourcingResult): string
+   - ASCII table with columns: Rank | Name | Email | Phone | Match% | Recommendation | Matched Skills | Missing Skills
+   - Color-coded match %: green ≥80%, yellow 60-79%, red <60% (use chalk)
+   - Truncate skills lists to 5 items with "...+N more"
+
+2. formatJSON(result: SourcingResult): string
+   - Pretty JSON with PII fields preserved
+   - Add metadata: generated_at, jd_title, tool_version
+
+3. formatMarkdown(result: SourcingResult): string
+   - Full markdown report suitable for pasting into Notion/Confluence
+   - Executive summary section, then candidate cards
+   - Each card: name, contact, match%, fit_summary, skill match table
+
+In /src/index.ts (CLI entrypoint):
+- Accept args: --jd <filepath> --output <table|json|markdown> --top <number, default 10> --min-match <0-100, default 0>
+- Read JD from file
+- Run pipeline
+- Print formatted output to stdout
+- Write JSON result to ./output/results_{timestamp}.json always (audit trail)
+- Show a progress spinner (use ora) during each pipeline phase with phase names
+- On error: print actionable error message and exit code 1
+```
+
+---
+
+## 📋 Phase 6 — Data Flow Diagram & Docs
+
+### Prompt 6.1 — Architecture docs
+
+```
+Generate the following documentation files:
+
+1. /data-flow.md — A detailed data flow document in Markdown with an embedded Mermaid diagram showing:
+   - User inputs JD file → CLI → JDParser (LLM) → ParsedJD
+   - ParsedJD → QueryGenerator (LLM) → 3 SearchStrategies
+   - Each strategy → ZohoRecruitClient (REST API) → raw candidates
+   - Deduplication → CandidateDetail fetch (parallel) → CandidateRanker
+   - Ranker: keyword scoring (all) → LLM deep scoring (top 20) → final ranked list
+   - Output: table/JSON/markdown + audit JSON file
+   Include a component responsibility table below the diagram.
+
+2. /README.md — Complete README with:
+   - Problem statement summary
+   - Architecture overview (reference data-flow.md)
+   - Prerequisites and installation steps
+   - .env setup instructions
+   - Usage examples with sample CLI commands
+   - How match % is calculated (explain the hybrid algorithm)
+   - API cost estimates (rough tokens per run)
+   - Known limitations
+   - Test instructions
+
+3. /PROMPTS.md — Document every LLM prompt used in the system:
+   - Prompt name, file location, purpose, input variables, output schema
+   - Design rationale for each prompt
+   - Example input/output pair
+```
+
+---
+
+## 📋 Phase 7 — Testing & Resilience
+
+### Prompt 7.1 — Full test suite
+
+```
+Write a comprehensive test suite in /tests/ using Vitest:
+
+1. /tests/jdParser.test.ts
+   - Test with a realistic Java backend JD → assert required_skills includes Java, Spring Boot
+   - Test with a vague JD → assert graceful handling, no crash
+   - Test with non-English JD → assert it still produces some output
+   - Mock the Anthropic API response
+
+2. /tests/candidateRanker.test.ts  
+   - Test keyword scoring: perfect match candidate gets >80
+   - Test experience boundary: 1 year off gets partial score
+   - Test deduplication: same candidate via email + phone counted once
+   - Test LLM batch: verify only top 20 go to LLM, rest use keyword score only
+
+3. /tests/pipeline.test.ts
+   - Happy path: JD in → ranked list out (all mocked)
+   - Zero Zoho results: all 3 strategies return empty → proper SourcingResult with empty candidates
+   - Zoho 429 rate limit: verify retry + backoff logic
+   - Partial LLM failure: LLM fails on batch 2 of ranking → falls back to keyword score for that batch
+
+4. /tests/zohoClient.test.ts
+   - Pagination: mock 3 pages of results, assert all are collected
+   - Token refresh mid-session: mock 401, assert re-auth + retry
+
+Add a /tests/fixtures/ folder with:
+   - sample_jd_java.txt — realistic Java backend JD
+   - sample_jd_data_engineer.txt — realistic data engineering JD  
+   - sample_candidates.json — 25 mock candidate records with varied skill sets
+```
+
+---
+
+## 📋 Phase 8 — Demo Prep
+
+### Prompt 8.1 — Demo script & cost guard
+
+```
+1. In /src/utils/costGuard.ts, implement a CostGuard that:
+   - Tracks cumulative token usage across the session (input + output separately)
+   - Estimates cost: input at $3/1M tokens, output at $15/1M tokens (Sonnet 4 pricing)
+   - Warns (yellow log) at $0.50 spent
+   - Throws CostLimitError at $2.00 spent (configurable via COST_LIMIT_USD env)
+   - Prints a cost summary at the end of each pipeline run
+
+2. Create /demo/run_demo.sh — a shell script that:
+   - Checks .env is configured (exits with helpful message if not)
+   - Runs the tool against both sample JDs in sequence
+   - Prints timing and cost for each run
+   - Saves results to /demo/results/
+
+3. Create /demo/sample_jds/java_backend_jd.txt with a realistic, detailed JD for:
+   "Senior Java Backend Developer, 6-10 years, BFSI domain, Spring Boot, Microservices, Kafka, AWS"
+
+4. Create /demo/sample_jds/data_engineer_jd.txt for:
+   "Data Engineer, 4-7 years, Python, PySpark, Databricks, Azure, SQL, ETL pipelines"
+
+These JDs should be detailed enough to produce non-trivial parsed output and exercise all 3 search strategies.
+```
+
+---
+
+## 🎯 Hackathon Scoring Tips — One Final Prompt
+
+### Prompt 9.1 — Polish for judges
+
+```
+Review the entire codebase and make the following judge-facing improvements:
+
+1. In data-flow.md, ensure the Mermaid diagram renders cleanly and the component table maps each component to its evaluation criterion (Architecture 20%, Prompts 20%, Match% 20%, Demo 25%, API Efficiency 10%, Docs 5%)
+
+2. Add a /PROMPTS.md section titled "Prompt Engineering Decisions" explaining:
+   - Why we use a two-pass ranking (keyword first, LLM second) → maps to API Key Usage (10%) criterion
+   - Why we use 3 search strategies → improves recall without wasting API calls
+   - How the ranker prompt prevents bias (important for enterprise use)
+
+3. In the CLI output, after printing the ranked table, always print:
+   - Total Zoho API calls made
+   - Total LLM calls made  
+   - Estimated cost of this run
+   - Time taken per phase (JD parsing, search, ranking, formatting)
+   This directly addresses the "API Key Usage Efficiency" criterion.
+
+4. Add a --dry-run flag to the CLI that:
+   - Parses the JD and shows what search queries would be generated
+   - Does NOT call Zoho or the ranker LLM
+   - Useful for demo to show the query generation step clearly to judges
+
+5. Ensure README.md has a "Hackathon Demo Script" section with exact CLI commands to run for the live demo, with expected output described.
+```
+
+---
+
+## ⚡ Quick Reference — Execution Order
+
+| Step | Claude Code Prompt | Builds |
+|---|---|---|
+| 1 | Prompt 1.1 | Full project scaffold |
+| 2 | Prompt 1.2 | OAuth + token refresh |
+| 3 | Prompt 2.1 | Zoho API client + pagination |
+| 4 | Prompt 3.1 | JD Parser + prompt file |
+| 5 | Prompt 3.2 | Query generator + COQL |
+| 6 | Prompt 3.3 | Hybrid ranker |
+| 7 | Prompt 4.1 | Pipeline orchestrator |
+| 8 | Prompt 5.1 | CLI + output formatters |
+| 9 | Prompt 6.1 | Docs + Mermaid diagram |
+| 10 | Prompt 7.1 | Full test suite |
+| 11 | Prompt 8.1 | Demo scripts + cost guard |
+| 12 | Prompt 9.1 | Judge-facing polish |
+
+**Pro tips for the day:**
+- Run `claude --continue` if a session drops — Claude Code preserves context
+- After each prompt, run `npx tsc --noEmit` to catch type errors before moving on
+- Keep a terminal tab running `npx vitest --watch` so tests fail loudly as you build
+- When you get real Zoho credentials, start with the `--dry-run` flag first to validate COQL queries before hitting the live ATS
