@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Client - Claude AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            max-width: 100vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .chat-box {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            min-height: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            margin-bottom: 20px;
+            background: #f9f9f9;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            text-align: right;
+        }
+
+        .message.assistant {
+            text-align: left;
+        }
+
+        .message-content {
+            display: inline-block;
+            padding: 12px 16px;
+            border-radius: 8px;
+            max-width: 80%;
+            word-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .message.assistant .message-content {
+            background: #e8e8e8;
+            color: #333;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            min-height: 100px;
+
+        }
+
+        .input-group textarea {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            resize: vertical;
+            min-height: 50px;
+            max-height: 200px;
+        }
+
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .input-group button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .input-group button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .input-group button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .status {
+            text-align: center;
+            font-size: 12px;
+            color: #999;
+            margin-top: 10px;
+        }
+
+        .status.loading {
+            color: #667eea;
+        }
+
+        .status.error {
+            color: #e74c3c;
+        }
+
+        .status.success {
+            color: #27ae60;
+        }
+
+        .code-block {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 10px 0;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .code-block code {
+            color: #333;
+        }
+
+        .xml-block {
+            background: #f0f8ff;
+            border-left: 4px solid #1e90ff;
+        }
+
+        .xml-block code {
+            color: #1a1a1a;
+        }
+
+        .json-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-size: 13px;
+            overflow: hidden;
+        }
+
+        .json-table th {
+            background: #f0f0f0;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #ddd;
+            color: #333;
+        }
+
+        .json-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eee;
+            color: #555;
+            word-break: break-word;
+        }
+
+        .json-table tr:hover {
+            background: #f9f9f9;
+        }
+
+        .json-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .markdown-content {
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .markdown-content p {
+            margin: 8px 0;
+        }
+
+        .markdown-content strong {
+            font-weight: 600;
+        }
+
+        .markdown-content code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💬 Claude AI with MCP</h1>
+            <p>Interact with Claude powered by Model Context Protocol</p>
+        </div>
+
+        <div class="content">
+            <div class="chat-box" id="chatBox"></div>
+
+            <div class="input-group">
+                <textarea
+                    id="messageInput"
+                    placeholder="Ask something... (Enter to send, Shift+Enter for new line)"
+                    onkeypress="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }"
+                ></textarea>
+                <button onclick="sendMessage()" id="sendBtn">Send</button>
+            </div>
+
+            <div class="status" id="status"></div>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chatBox');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const status = document.getElementById('status');
+
+        function parseJsonFromMarkdown(text) {
+            const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
+            if (jsonMatch) {
+                try {
+                    return JSON.parse(jsonMatch[1]);
+                } catch (e) {
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        function parseXmlFromMarkdown(text) {
+            const xmlMatch = text.match(/```xml\n([\s\S]*?)\n```/);
+            if (xmlMatch) {
+                return xmlMatch[1];
+            }
+            return null;
+        }
+
+        function removeJsonBlock(text) {
+            return text.replace(/```json\n[\s\S]*?\n```/g, '').trim();
+        }
+
+        function removeXmlBlock(text) {
+            return text.replace(/```xml\n[\s\S]*?\n```/g, '').trim();
+        }
+
+        function jsonToTable(jsonData) {
+            if (!Array.isArray(jsonData)) {
+                return null;
+            }
+
+            if (jsonData.length === 0) {
+                return null;
+            }
+
+            if (typeof jsonData[0] !== 'object' || jsonData[0] === null) {
+                return null;
+            }
+
+            const headers = Object.keys(jsonData[0]);
+            const table = document.createElement('table');
+            table.className = 'json-table';
+
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            jsonData.forEach(row => {
+                const tr = document.createElement('tr');
+                headers.forEach(header => {
+                    const td = document.createElement('td');
+                    const value = row[header];
+                    if (typeof value === 'object') {
+                        td.textContent = JSON.stringify(value);
+                    } else {
+                        td.textContent = value;
+                    }
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+
+            return table;
+        }
+
+        function xmlToTable(xmlString) {
+            try {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+
+                // Check for parsing errors
+                if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                    return null;
+                }
+
+                // Get the root element
+                const root = xmlDoc.documentElement;
+
+                // Check if root has child elements that repeat
+                const children = Array.from(root.children);
+                if (children.length === 0) return null;
+
+                // If all children have the same tag name, convert to table
+                const firstChildTag = children[0].tagName;
+                if (children.every(child => child.tagName === firstChildTag)) {
+                    // Get all unique attribute names and child element names
+                    const headers = new Set();
+                    children.forEach(child => {
+                        // Add attributes
+                        Array.from(child.attributes).forEach(attr => {
+                            headers.add(attr.name);
+                        });
+                        // Add child elements
+                        Array.from(child.children).forEach(el => {
+                            headers.add(el.tagName);
+                        });
+                    });
+
+                    if (headers.size === 0) return null;
+
+                    const headerArray = Array.from(headers);
+                    const table = document.createElement('table');
+                    table.className = 'json-table';
+
+                    const thead = document.createElement('thead');
+                    const headerRow = document.createElement('tr');
+                    headerArray.forEach(header => {
+                        const th = document.createElement('th');
+                        th.textContent = header;
+                        headerRow.appendChild(th);
+                    });
+                    thead.appendChild(headerRow);
+                    table.appendChild(thead);
+
+                    const tbody = document.createElement('tbody');
+                    children.forEach(child => {
+                        const tr = document.createElement('tr');
+                        headerArray.forEach(header => {
+                            const td = document.createElement('td');
+
+                            // Check if it's an attribute
+                            if (child.hasAttribute(header)) {
+                                td.textContent = child.getAttribute(header);
+                            } else {
+                                // Check if it's a child element
+                                const childEl = child.querySelector(header);
+                                td.textContent = childEl ? childEl.textContent : '';
+                            }
+                            tr.appendChild(td);
+                        });
+                        tbody.appendChild(tr);
+                    });
+                    table.appendChild(tbody);
+
+                    return table;
+                }
+            } catch (e) {
+                console.error('Error parsing XML:', e);
+            }
+            return null;
+        }
+
+        function formatResponse(text) {
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+
+            // Try to parse JSON from markdown code blocks
+            const jsonData = parseJsonFromMarkdown(text);
+
+            if (jsonData) {
+                // Remove the JSON block from the text
+                const remainingText = removeJsonBlock(text);
+
+                // Add any remaining text
+                if (remainingText) {
+                    const textDiv = document.createElement('div');
+                    textDiv.className = 'markdown-content';
+                    textDiv.innerHTML = escapeHtml(remainingText)
+                        .replace(/\n/g, '<br>')
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    contentDiv.appendChild(textDiv);
+                }
+
+                // Try to convert to table if it's an array of objects
+                const table = jsonToTable(jsonData);
+                if (table) {
+                    contentDiv.appendChild(table);
+                } else {
+                    // Otherwise show as formatted code block
+                    const codeBlock = document.createElement('pre');
+                    codeBlock.className = 'code-block';
+                    codeBlock.textContent = JSON.stringify(jsonData, null, 2);
+                    contentDiv.appendChild(codeBlock);
+                }
+            } else {
+                // Try to parse XML from markdown code blocks
+                const xmlData = parseXmlFromMarkdown(text);
+
+                if (xmlData) {
+                    const remainingText = removeXmlBlock(text);
+
+                    // Add any remaining text
+                    if (remainingText) {
+                        const textDiv = document.createElement('div');
+                        textDiv.className = 'markdown-content';
+                        textDiv.innerHTML = escapeHtml(remainingText)
+                            .replace(/\n/g, '<br>')
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                        contentDiv.appendChild(textDiv);
+                    }
+
+                    // Try to convert to table if possible
+                    const table = xmlToTable(xmlData);
+                    if (table) {
+                        contentDiv.appendChild(table);
+                    } else {
+                        // Otherwise show as formatted code block
+                        const codeBlock = document.createElement('pre');
+                        codeBlock.className = 'code-block';
+                        codeBlock.textContent = xmlData;
+                        contentDiv.appendChild(codeBlock);
+                    }
+                } else {
+                    // No JSON or XML found, display as markdown content
+                    const textDiv = document.createElement('div');
+                    textDiv.className = 'markdown-content';
+                    textDiv.innerHTML = escapeHtml(text)
+                        .replace(/\n/g, '<br>')
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/`(.*?)`/g, '<code>$1</code>');
+                    contentDiv.appendChild(textDiv);
+                }
+            }
+
+            return contentDiv;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function addMessage(text, isUser) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
+
+            if (isUser) {
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                contentDiv.textContent = text;
+                msgDiv.appendChild(contentDiv);
+            } else {
+                msgDiv.appendChild(formatResponse(text));
+            }
+
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function updateStatus(text, type = '') {
+            status.textContent = text;
+            status.className = 'status ' + type;
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // Disable input
+            messageInput.disabled = true;
+            sendBtn.disabled = true;
+
+            // Add user message
+            addMessage(message, true);
+            messageInput.value = '';
+
+            updateStatus('Sending...', 'loading');
+
+            try {
+                const response = await fetch('/api/chat/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Handle different response types:
+                // 1. DataResponse with { data_type, data, timestamp }
+                // 2. ChatResponse with { response, tools_used, timestamp }
+                // 3. Plain string or JSON
+
+                if (data.data_type) {
+                    // It's a DataResponse with metadata
+                    if (data.data_type === 'json') {
+                        addFormattedJsonMessage(data.data);
+                    } else if (data.data_type === 'xml') {
+                        addFormattedXmlMessage(data.data);
+                    }
+                } else if (data.response !== undefined) {
+                    // It's a ChatResponse object
+                    addMessage(data.response, false);
+                } else if (Array.isArray(data) || (typeof data === 'object' && data !== null)) {
+                    // It's direct JSON data
+                    addFormattedJsonMessage(data);
+                } else {
+                    // It's a string response
+                    addMessage(JSON.stringify(data), false);
+                }
+
+                updateStatus('Ready', 'success');
+            } catch (error) {
+                updateStatus('Error: ' + error.message, 'error');
+                addMessage('Error: ' + error.message, false);
+            } finally {
+                // Enable input
+                messageInput.disabled = false;
+                sendBtn.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+        function formatXmlString(xmlString) {
+            try {
+                // Parse and format the XML
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+
+                // Check for parsing errors
+                if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                    return xmlString; // Return original if parsing fails
+                }
+
+                // Format the XML with indentation
+                return formatXmlNode(xmlDoc.documentElement, 0);
+            } catch (e) {
+                console.error('Error formatting XML:', e);
+                return xmlString;
+            }
+        }
+
+        function formatXmlNode(node, indent) {
+            let result = '';
+            const indentStr = '  '.repeat(indent);
+            const nextIndentStr = '  '.repeat(indent + 1);
+
+            result += indentStr + '<' + node.tagName;
+
+            // Add attributes
+            if (node.attributes && node.attributes.length > 0) {
+                for (let i = 0; i < node.attributes.length; i++) {
+                    const attr = node.attributes[i];
+                    result += ' ' + attr.name + '="' + escapeXmlAttribute(attr.value) + '"';
+                }
+            }
+
+            if (node.childNodes.length === 0) {
+                result += ' />\n';
+            } else if (node.childNodes.length === 1 && node.childNodes[0].nodeType === 3) {
+                // Single text node - keep on same line
+                result += '>' + escapeXmlContent(node.textContent) + '</' + node.tagName + '>\n';
+            } else {
+                result += '>\n';
+
+                // Process child nodes
+                for (let i = 0; i < node.childNodes.length; i++) {
+                    const child = node.childNodes[i];
+                    if (child.nodeType === 1) { // Element node
+                        result += formatXmlNode(child, indent + 1);
+                    } else if (child.nodeType === 3 && child.textContent.trim()) { // Text node with content
+                        result += nextIndentStr + escapeXmlContent(child.textContent.trim()) + '\n';
+                    }
+                }
+
+                result += indentStr + '</' + node.tagName + '>\n';
+            }
+
+            return result;
+        }
+
+        function escapeXmlContent(text) {
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        function escapeXmlAttribute(text) {
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        function addFormattedXmlMessage(xmlString) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message assistant';
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+
+            // Try to convert to table if possible
+            const table = xmlToTable(xmlString);
+            if (table) {
+                contentDiv.appendChild(table);
+            } else {
+                // Otherwise show as formatted code block with nice formatting
+                const formattedXml = formatXmlString(xmlString);
+                const codeBlock = document.createElement('pre');
+                codeBlock.className = 'code-block xml-block';
+                codeBlock.innerHTML = `<code>${escapeHtml(formattedXml)}</code>`;
+                contentDiv.appendChild(codeBlock);
+            }
+
+            msgDiv.appendChild(contentDiv);
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function addFormattedJsonMessage(jsonData) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message assistant';
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+
+            // Try to convert to table if it's an array of objects
+            const table = jsonToTable(jsonData);
+            if (table) {
+                contentDiv.appendChild(table);
+            } else {
+                // Otherwise show as formatted code block
+                const codeBlock = document.createElement('pre');
+                codeBlock.className = 'code-block';
+                codeBlock.textContent = JSON.stringify(jsonData, null, 2);
+                contentDiv.appendChild(codeBlock);
+            }
+
+            msgDiv.appendChild(contentDiv);
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // Focus on input on load
+        window.addEventListener('load', () => {
+            messageInput.focus();
+            updateStatus('Connected', 'success');
+        });
+    </script>
+</body>
+</html>
+

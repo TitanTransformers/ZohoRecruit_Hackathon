@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: mcp-client
+  ai:
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY}
+      chat:
+        options:
+          model: claude-sonnet-4-20250514   # Claude model to use
+          max-tokens: 1024
+    mcp:
+      client:
+        type: sync
+        request-timeout: 30s
+        streamable-http:
+          connections:
+            my-mcp-server:
+              url: http://localhost:8080/mcp     # Streamable HTTP endpoint on MCP server
+logging:
+  level:
+    root: INFO
+    com.mcp.mcp_client: DEBUG
+    org.springframework.ai: DEBUG
+
+server:
+  port: 8081
