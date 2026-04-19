@@ -11,7 +11,6 @@ interface ModernNavbarProps {
 }
 
 const ModernNavbar: React.FC<ModernNavbarProps> = ({
-  costEstimate = 0,
   historyItems = [],
   onHistorySelect,
   onHistoryDelete,

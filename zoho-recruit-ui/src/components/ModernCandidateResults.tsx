@@ -8,6 +8,7 @@ interface CandidateCardProps {
 
 const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, rank }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const matchPercentage = candidate.matchPercentage ?? 0;
 
   const getMatchColor = (percentage: number) => {
     if (percentage >= 80) return 'from-color-success to-color-success';
@@ -34,7 +35,7 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, rank }) => {
         </div>
 
         {/* Avatar */}
-        <div className={`w-16 h-16 rounded-lg bg-gradient-to-br ${getMatchColor(candidate.matchPercentage)} flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0`}>
+        <div className={`w-16 h-16 rounded-lg bg-gradient-to-br ${getMatchColor(matchPercentage)} flex items-center justify-center text-white font-bold text-lg shadow-lg flex-shrink-0`}>
           {candidate.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
         </div>
 
@@ -62,23 +63,23 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, rank }) => {
               cy="50"
               r="40"
               fill="none"
-              stroke={candidate.matchPercentage >= 80 ? '#10b981' : candidate.matchPercentage >= 60 ? '#f59e0b' : '#ef4444'}
+              stroke={matchPercentage >= 80 ? '#10b981' : matchPercentage >= 60 ? '#f59e0b' : '#ef4444'}
               strokeWidth="4"
-              strokeDasharray={`${(candidate.matchPercentage / 100) * 2 * Math.PI * 40} ${2 * Math.PI * 40}`}
+              strokeDasharray={`${(matchPercentage / 100) * 2 * Math.PI * 40} ${2 * Math.PI * 40}`}
               strokeLinecap="round"
               className="transition-all duration-500"
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-base font-bold text-dark-text leading-none">{Math.floor(candidate.matchPercentage)}%</span>
+            <span className="text-base font-bold text-dark-text leading-none">{Math.floor(matchPercentage)}%</span>
           </div>
         </div>
       </div>
 
       {/* Match Badge */}
       <div className="flex items-center gap-2 mb-4">
-        <span className={`px-0 py-1 rounded-full text-lg font-bold border ${getMatchBadgeColor(candidate.matchPercentage)}`}>
-          {candidate.matchPercentage >= 80 ? '✓ Perfect Match' : candidate.matchPercentage >= 60 ? 'Good Match' : 'Partial Match'}
+        <span className={`px-0 py-1 rounded-full text-lg font-bold border ${getMatchBadgeColor(matchPercentage)}`}>
+          {matchPercentage >= 80 ? '✓ Perfect Match' : matchPercentage >= 60 ? 'Good Match' : 'Partial Match'}
         </span>
       </div>
 
