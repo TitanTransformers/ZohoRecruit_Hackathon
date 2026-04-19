@@ -3,6 +3,8 @@ package com.mcp.mcp_client.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -10,7 +12,7 @@ import lombok.*;
 public class PaginatedResponse {
 
     @JsonProperty("content")
-    private String content;
+    private List<RankedCandidate> candidates;
 
     @JsonProperty("page")
     private int page;
@@ -30,4 +32,3 @@ public class PaginatedResponse {
     @JsonProperty("has_previous")
     private boolean hasPrevious;
 }
-
