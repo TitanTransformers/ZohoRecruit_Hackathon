@@ -7,7 +7,8 @@ spring:
       chat:
         options:
           model: claude-sonnet-4-20250514   # Claude model to use
-          max-tokens: 4096
+          max-tokens: 8192
+          temperature: 0.1                  # Lower temperature for focused responses
     mcp:
       client:
         type: sync

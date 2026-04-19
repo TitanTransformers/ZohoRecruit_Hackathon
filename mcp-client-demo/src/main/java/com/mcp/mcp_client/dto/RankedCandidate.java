@@ -1,5 +1,7 @@
 package com.mcp.mcp_client.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,18 +16,43 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RankedCandidate {
+
+    @JsonAlias({"candidate_id", "id"})
     private String candidateId;
+
+    @JsonAlias({"candidate_name", "full_name", "fullName"})
     private String name;
+
+    @JsonAlias({"email_address", "emailAddress"})
     private String email;
+
+    @JsonAlias({"phone_number", "phoneNumber"})
     private String phone;
-    private Double matchPercentage;              // Overall match percentage (0-100)
-    private Double skillMatchPercentage;         // Skill-specific match percentage (0-100)
-    private Double experienceMatchPercentage;    // Experience-specific match percentage (0-100)
-    private Integer rankPosition;                // Position in ranked list (1-based)
+
+    @JsonAlias({"match_percentage", "matchScore", "match_score", "overall_match"})
+    private Double matchPercentage;
+
+    @JsonAlias({"skill_match_percentage", "skillMatch", "skill_match"})
+    private Double skillMatchPercentage;
+
+    @JsonAlias({"experience_match_percentage", "experienceMatch", "experience_match"})
+    private Double experienceMatchPercentage;
+
+    @JsonAlias({"rank_position", "rank", "position"})
+    private Integer rankPosition;
+
+    @JsonAlias({"matched_skills", "matchingSkills", "matching_skills"})
     private List<String> matchedSkills;
+
+    @JsonAlias({"missing_skills", "missingSkills"})
     private List<String> missingSkills;
+
+    @JsonAlias({"match_reasoning", "reasoning", "matchReason"})
     private String matchReasoning;
+
+    @JsonAlias({"fit_analysis", "fitAnalysis", "analysis"})
     private String fitAnalysis;
 }
 
