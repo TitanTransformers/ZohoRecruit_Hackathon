@@ -1,6 +1,6 @@
 package com.mcp.mcp_server.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mcp.mcp_server.entity.Candidate;
 import com.mcp.mcp_server.entity.JobDescription;
@@ -61,19 +61,19 @@ public class AIEnhancedCandidateRankingService {
             Candidate c = candidates.get(i);
             candidatesJson.append(String.format("""
                     {
-                      "id": "%s",
-                      "name": "%s",
-                      "email": "%s",
-                      "currentPosition": "%s",
-                      "experience": "%s",
-                      "skills": "%s"
+                      "id": %s,
+                      "name": %s,
+                      "email": %s,
+                      "currentPosition": %s,
+                      "experience": %s,
+                      "skills": %s
                     }""",
-                    c.getCandidateId() != null ? c.getCandidateId() : "",
-                    c.getName() != null ? c.getName() : "",
-                    c.getEmail() != null ? c.getEmail() : "",
-                    c.getCurrentPosition() != null ? c.getCurrentPosition() : "",
-                    c.getExperience() != null ? c.getExperience() : "",
-                    c.getSkills() != null ? String.join(", ", c.getSkills()) : ""));
+                    escapeJsonString(c.getCandidateId()),
+                    escapeJsonString(c.getName()),
+                    escapeJsonString(c.getEmail()),
+                    escapeJsonString(c.getCurrentPosition()),
+                    escapeJsonString(c.getExperience()),
+                    escapeJsonString(c.getSkills() != null ? String.join(", ", c.getSkills()) : "")));
             if (i < candidates.size() - 1) {
                 candidatesJson.append(",");
             }
@@ -135,50 +135,370 @@ public class AIEnhancedCandidateRankingService {
 
     /**
      * Parse AI ranking results and build RankedCandidate list
+     * Deserializes JSON response directly and enriches with candidate data
      */
     private List<RankedCandidate> parseAIRankingResults(String aiResponse, List<Candidate> candidates) {
         try {
-            // Clean response
-            String cleanedResponse = aiResponse
-                    .replaceAll("```json\\n?", "")
-                    .replaceAll("```\\n?", "")
-                    .trim();
+            // Step 1: Extract and validate JSON
+            String cleanedResponse = extractAndValidateJSON(aiResponse);
+            log.debug("Parsing cleaned JSON response (length: {})", cleanedResponse.length());
 
-            JsonNode[] rankingResults = objectMapper.readValue(cleanedResponse, JsonNode[].class);
+            // Step 2: Parse JSON array directly into List<Map>
+            List<Map<String, Object>> rankingResults = objectMapper.readValue(cleanedResponse,
+                    new TypeReference<List<Map<String, Object>>>() {});
+
+            if (rankingResults == null || rankingResults.isEmpty()) {
+                log.warn("No ranking results found in parsed JSON");
+                return new ArrayList<>();
+            }
+
+            log.debug("Successfully parsed {} ranking results from AI response", rankingResults.size());
+
+            // Step 3: Create candidate lookup map
             Map<String, Candidate> candidateMap = candidates.stream()
-                    .collect(Collectors.toMap(c -> c.getCandidateId(), c -> c));
+                    .collect(Collectors.toMap(Candidate::getCandidateId, c -> c));
 
-            List<RankedCandidate> ranked = new ArrayList<>();
-            for (JsonNode result : rankingResults) {
-                String candidateId = result.get("candidateId").asText();
-                Candidate candidate = candidateMap.get(candidateId);
+            // Step 4: Convert each ranking result to RankedCandidate
+            List<RankedCandidate> rankedCandidates = rankingResults.stream()
+                    .map(result -> convertToRankedCandidate(result, candidateMap))
+                    .filter(Objects::nonNull).sorted(Comparator.comparingDouble(RankedCandidate::getMatchPercentage).reversed()).collect(Collectors.toList());
 
-                if (candidate != null) {
-                    RankedCandidate rankedCandidate = RankedCandidate.builder()
-                            .candidateId(candidateId)
-                            .name(candidate.getName())
-                            .email(candidate.getEmail())
-                            .phone(candidate.getPhone())
-                            .matchPercentage(Math.min(100.0, result.get("matchPercentage").asDouble()))
-                            .skillMatchPercentage(getDoubleValue(result, "skillMatchPercentage"))
-                            .experienceMatchPercentage(getDoubleValue(result, "experienceMatchPercentage"))
-                            .matchedSkills(getListValue(result, "matchedSkills"))
-                            .missingSkills(getListValue(result, "missingSkills"))
-                            .matchReasoning(result.get("matchReasoning").asText())
-                            .fitAnalysis(result.get("fitAnalysis").asText())
-                            .build();
+            // Step 5: Sort by match percentage in descending order
 
-                    ranked.add(rankedCandidate);
+            log.info("Successfully created {} ranked candidates from {} AI results",
+                    rankedCandidates.size(), rankingResults.size());
+            return rankedCandidates;
+
+        } catch (Exception e) {
+            log.error("Failed to parse AI ranking results: {}", e.getMessage(), e);
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Convert a ranking result Map to RankedCandidate entity
+     * Enriches AI-generated ranking data with candidate profile information
+     */
+    private RankedCandidate convertToRankedCandidate(Map<String, Object> result,
+                                                      Map<String, Candidate> candidateMap) {
+        try {
+            String candidateId = getString(result, "candidateId");
+            if (candidateId == null || candidateId.isBlank()) {
+                log.warn("Skipping ranking result without valid candidateId");
+                return null;
+            }
+
+            Candidate candidate = candidateMap.get(candidateId);
+            if (candidate == null) {
+                log.debug("Candidate not found in lookup map for ID: {}", candidateId);
+                return null;
+            }
+
+            // Build RankedCandidate from AI ranking data + candidate profile
+            return RankedCandidate.builder()
+                    .candidateId(candidateId)
+                    .name(candidate.getName())
+                    .email(candidate.getEmail())
+                    .phone(candidate.getPhone())
+                    .matchPercentage(Math.min(100.0, getDouble(result, "matchPercentage")))
+                    .skillMatchPercentage(getDouble(result, "skillMatchPercentage"))
+                    .experienceMatchPercentage(getDouble(result, "experienceMatchPercentage"))
+                    .matchedSkills(getList(result, "matchedSkills"))
+                    .missingSkills(getList(result, "missingSkills"))
+                    .matchReasoning(getString(result, "matchReasoning"))
+                    .fitAnalysis(getString(result, "fitAnalysis"))
+                    .build();
+
+        } catch (Exception e) {
+            log.warn("Error converting ranking result to RankedCandidate: {}", e.getMessage());
+            return null;
+        }
+    }
+
+
+    /**
+     * Safely get string value from Map
+     */
+    private String getString(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value != null) {
+            return value.toString();
+        }
+        return null;
+    }
+
+    /**
+     * Safely get double value from Map
+     */
+    private Double getDouble(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value != null) {
+            try {
+                if (value instanceof Number) {
+                    return Math.min(100.0, ((Number) value).doubleValue());
+                }
+                return Math.min(100.0, Double.parseDouble(value.toString()));
+            } catch (Exception e) {
+                log.warn("Error parsing double value for key {}: {}", key, e.getMessage());
+            }
+        }
+        return 0.0;
+    }
+
+    /**
+     * Safely get list value from Map
+     */
+    @SuppressWarnings("unchecked")
+    private List<String> getList(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value instanceof List) {
+            List<?> list = (List<?>) value;
+            return list.stream()
+                    .map(Object::toString)
+                    .collect(Collectors.toList());
+        }
+        return new ArrayList<>();
+    }
+
+    /**
+     * Attempt to recover from JSON parsing errors by closing incomplete structures
+     */
+    private String attemptJsonRecovery(String jsonString) {
+        if (jsonString == null || jsonString.trim().isEmpty()) {
+            return null;
+        }
+
+        // Find start of JSON
+        int startIdx = jsonString.indexOf('[');
+        char closeChar = ']';
+
+        if (startIdx == -1) {
+            startIdx = jsonString.indexOf('{');
+            closeChar = '}';
+        }
+
+        if (startIdx == -1) {
+            return null;
+        }
+
+        // Try to find last valid object/array end
+        int lastValidIdx = -1;
+        int bracketCount = 0;
+        boolean inString = false;
+        boolean escaped = false;
+
+        for (int i = startIdx; i < jsonString.length(); i++) {
+            char c = jsonString.charAt(i);
+
+            if (escaped) {
+                escaped = false;
+                continue;
+            }
+
+            if (c == '\\' && inString) {
+                escaped = true;
+                continue;
+            }
+
+            if (c == '"') {
+                inString = !inString;
+                continue;
+            }
+
+            if (!inString) {
+                if (c == '[' || c == '{') {
+                    bracketCount++;
+                } else if (c == ']' || c == '}') {
+                    bracketCount--;
+                    if (bracketCount == 0) {
+                        lastValidIdx = i;
+                    }
+                }
+            }
+        }
+
+        // If we found a valid complete structure, return it
+        if (lastValidIdx > startIdx) {
+            String recovered = jsonString.substring(startIdx, lastValidIdx + 1);
+            log.debug("Recovered complete JSON structure (length: {})", recovered.length());
+            return recovered;
+        }
+
+        // If no complete structure but we have partial, try to close it
+        if (bracketCount > 0 && lastValidIdx > startIdx) {
+            log.debug("Attempting to close incomplete JSON with {} open brackets", bracketCount);
+            return attemptPartialJsonRecovery(jsonString.substring(startIdx), bracketCount);
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract valid JSON from AI response with robust error handling
+     */
+    private String extractAndValidateJSON(String aiResponse) {
+        if (aiResponse == null || aiResponse.trim().isEmpty()) {
+            throw new IllegalArgumentException("AI response is empty or null");
+        }
+
+        // Log the full response for debugging incomplete JSON
+        log.debug("Full AI response length: {}", aiResponse.length());
+        log.debug("Full AI response preview: {}", aiResponse.substring(0, Math.min(500, aiResponse.length())));
+
+        // Step 1: Remove markdown code blocks
+        String cleaned = aiResponse
+                .replaceAll("```(?:json)?\\s*\\n?", "")
+                .replaceAll("```\\s*\\n?", "")
+                .trim();
+
+        // Step 2: Extract JSON using bracket matching for arrays or objects
+        String extracted = extractJsonByBracketMatching(cleaned);
+
+        // If extraction failed, try recovery for incomplete JSON
+        if (extracted == null || extracted.isEmpty()) {
+            log.warn("Initial extraction failed, attempting recovery...");
+            extracted = attemptJsonRecovery(cleaned);
+        }
+
+        if (extracted == null || extracted.isEmpty()) {
+            log.error("Could not extract valid JSON from response. Cleaned response: {}",
+                    cleaned.substring(0, Math.min(500, cleaned.length())));
+            throw new IllegalArgumentException("No valid JSON found in AI response");
+        }
+
+        return extracted;
+    }
+
+    /**
+     * Extract JSON from text using proper bracket matching
+     * Handles both arrays [...] and objects {...}
+     */
+    private String extractJsonByBracketMatching(String text) {
+        // Try to find JSON array first
+        int startIdx = text.indexOf('[');
+        char openChar = '[';
+        char closeChar = ']';
+
+        // If no array, look for JSON object
+        if (startIdx == -1) {
+            startIdx = text.indexOf('{');
+            openChar = '{';
+            closeChar = '}';
+        }
+
+        if (startIdx == -1) {
+            log.debug("No JSON start character found");
+            return null;
+        }
+
+        log.debug("JSON starts at index {} with char: {}", startIdx, openChar);
+
+        int bracketCount = 0;
+        boolean inString = false;
+        boolean previousCharEscaped = false;
+        int lastValidIndex = -1;
+
+        for (int i = startIdx; i < text.length(); i++) {
+            char c = text.charAt(i);
+            boolean currentCharEscaped = false;
+
+            // Check if current character is escaped
+            if (c == '\\' && inString && !previousCharEscaped) {
+                currentCharEscaped = true;
+            }
+
+            // Handle string boundaries (only if not escaped)
+            if (c == '"' && !previousCharEscaped) {
+                inString = !inString;
+            }
+
+            // Only count brackets outside of strings
+            if (!inString) {
+                if (c == openChar || c == '{' || c == '[') {
+                    bracketCount++;
+                    lastValidIndex = i;
+                } else if (c == closeChar || c == '}' || c == ']') {
+                    bracketCount--;
+                    lastValidIndex = i;
+                    if (bracketCount == 0) {
+                        // Found matching closing bracket
+                        String potential = text.substring(startIdx, i + 1);
+                        log.debug("Successfully extracted JSON (length: {})", potential.length());
+                        return potential;
+                    }
                 }
             }
 
-            // Sort by match percentage descending
-            ranked.sort(Comparator.comparingDouble(RankedCandidate::getMatchPercentage).reversed());
-            return ranked;
-        } catch (Exception e) {
-            log.error("Failed to parse AI ranking results", e);
-            return new ArrayList<>();
+            // Update escape status for next iteration
+            previousCharEscaped = currentCharEscaped;
         }
+
+        // If we get here, JSON was not properly closed
+        log.warn("Unclosed JSON structure - found {} unmatched opening brackets. Last valid index: {}", bracketCount, lastValidIndex);
+
+        // Try to recover by returning partial JSON with proper closure
+        if (lastValidIndex > startIdx) {
+            return attemptPartialJsonRecovery(text.substring(startIdx, lastValidIndex + 1), bracketCount);
+        }
+
+        return null;
+    }
+
+    /**
+     * Recover incomplete JSON array by truncating to the last complete object
+     * and properly closing the array structure
+     */
+    private String attemptPartialJsonRecovery(String incompleteJson, int openBracketCount) {
+        if (openBracketCount <= 0) {
+            return incompleteJson;
+        }
+
+        log.warn("JSON is truncated with {} unclosed brackets. Attempting recovery by finding last complete object...", openBracketCount);
+
+        // Find the last complete JSON object by scanning for the last '}'
+        // that properly closes an object at the array element level
+        int depth = 0;
+        int lastCompleteObjectEnd = -1;
+        boolean inString = false;
+        boolean escaped = false;
+
+        for (int i = 0; i < incompleteJson.length(); i++) {
+            char c = incompleteJson.charAt(i);
+
+            if (escaped) {
+                escaped = false;
+                continue;
+            }
+            if (c == '\\' && inString) {
+                escaped = true;
+                continue;
+            }
+            if (c == '"') {
+                inString = !inString;
+                continue;
+            }
+            if (!inString) {
+                if (c == '{' || c == '[') {
+                    depth++;
+                } else if (c == '}' || c == ']') {
+                    depth--;
+                    // depth == 1 means we just closed an object at the top-level array
+                    if (depth == 1 && c == '}') {
+                        lastCompleteObjectEnd = i;
+                    }
+                }
+            }
+        }
+
+        if (lastCompleteObjectEnd > 0) {
+            // Truncate to the last complete object and close the array
+            String recovered = incompleteJson.substring(0, lastCompleteObjectEnd + 1) + "]";
+            log.info("Recovery successful: truncated incomplete last object. Recovered JSON length: {}", recovered.length());
+            return recovered;
+        }
+
+        log.error("Recovery failed: could not find any complete object in the array");
+        return null;
     }
 
     /**
@@ -227,29 +547,26 @@ public class AIEnhancedCandidateRankingService {
                      String.join("; ", jobDescription.getResponsibilities()));
 
              String response = getChatClient().prompt()
-                     .user(prompt)
-                     .call()
-                     .content();
+                      .user(prompt)
+                      .call()
+                      .content();
 
-             String cleanedResponse = response
-                     .replaceAll("```json\\n?", "")
-                    .replaceAll("```\\n?", "")
-                    .trim();
+              String cleanedResponse = extractAndValidateJSON(response);
 
-            JsonNode analysis = objectMapper.readTree(cleanedResponse);
+             Map<String, Object> analysis = parseJsonToMap(cleanedResponse);
 
             Map<String, Object> result = new LinkedHashMap<>();
             result.put("candidateId", candidate.getCandidateId());
             result.put("candidateName", candidate.getName());
             result.put("jobTitle", jobDescription.getJobTitle());
-            result.put("overallFit", analysis.get("overallFit").asText());
-            result.put("strengths", getListValue(analysis, "strengths"));
-            result.put("weaknesses", getListValue(analysis, "weaknesses"));
-            result.put("developmentAreas", getListValue(analysis, "developmentAreas"));
-            result.put("potentialToGrow", analysis.get("potentialToGrow").asBoolean());
-            result.put("culturalFit", analysis.get("culturalFit").asText());
-            result.put("recommendedInterviewFocus", getListValue(analysis, "recommendedInterviewFocus"));
-            result.put("estimatedRampUpTime", analysis.get("estimatedRampUpTime").asText());
+            result.put("overallFit", getString(analysis, "overallFit"));
+            result.put("strengths", getList(analysis, "strengths"));
+            result.put("weaknesses", getList(analysis, "weaknesses"));
+            result.put("developmentAreas", getList(analysis, "developmentAreas"));
+            result.put("potentialToGrow", analysis.get("potentialToGrow"));
+            result.put("culturalFit", getString(analysis, "culturalFit"));
+            result.put("recommendedInterviewFocus", getList(analysis, "recommendedInterviewFocus"));
+            result.put("estimatedRampUpTime", getString(analysis, "estimatedRampUpTime"));
 
             return result;
         } catch (Exception e) {
@@ -300,26 +617,29 @@ public class AIEnhancedCandidateRankingService {
                     String.join(", ", jobDescription.getRequiredSkills()),
                      String.join("; ", jobDescription.getResponsibilities().stream().limit(3).collect(Collectors.toList())));
 
-             String response = getChatClient().prompt()
-                     .user(prompt)
-                     .call()
-                     .content();
+              String response = getChatClient().prompt()
+                      .user(prompt)
+                      .call()
+                      .content();
 
-             String cleanedResponse = response
-                     .replaceAll("```json\\n?", "")
-                    .replaceAll("```\\n?", "")
-                    .trim();
+              String cleanedResponse = extractAndValidateJSON(response);
 
-            JsonNode questionsNode = objectMapper.readTree(cleanedResponse);
-            JsonNode questionsArray = questionsNode.get("questions");
+             Map<String, Object> questionsData = parseJsonToMap(cleanedResponse);
+            List<?> questionsArray = (List<?>) questionsData.get("questions");
 
             List<Map<String, String>> questions = new ArrayList<>();
-            for (JsonNode q : questionsArray) {
-                Map<String, String> question = new LinkedHashMap<>();
-                question.put("question", q.get("question").asText());
-                question.put("category", q.get("category").asText());
-                question.put("rationale", q.get("rationale").asText());
-                questions.add(question);
+            if (questionsArray != null) {
+                for (Object q : questionsArray) {
+                    if (q instanceof Map) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> qMap = (Map<String, Object>) q;
+                        Map<String, String> question = new LinkedHashMap<>();
+                        question.put("question", getString(qMap, "question"));
+                        question.put("category", getString(qMap, "category"));
+                        question.put("rationale", getString(qMap, "rationale"));
+                        questions.add(question);
+                    }
+                }
             }
 
             Map<String, Object> result = new LinkedHashMap<>();
@@ -340,25 +660,37 @@ public class AIEnhancedCandidateRankingService {
     // Helper methods
     // ─────────────────────────────────────────────────────────────────────────
 
-    private List<String> getListValue(JsonNode node, String field) {
-        List<String> list = new ArrayList<>();
-        if (node.has(field) && node.get(field).isArray()) {
-            for (JsonNode item : node.get(field)) {
-                list.add(item.asText());
-            }
+    /**
+     * Escape a string for JSON and wrap in quotes
+     * Handles null values by returning "null"
+     */
+    private String escapeJsonString(String value) {
+        if (value == null || value.isEmpty()) {
+            return "\"\"";
         }
-        return list;
+        // Escape special JSON characters
+        String escaped = value
+                .replace("\\", "\\\\")  // Backslash must be first
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t")
+                .replace("\b", "\\b")
+                .replace("\f", "\\f");
+        return "\"" + escaped + "\"";
     }
 
+
     /**
-     * Get double value from JsonNode
-     * Safely extracts numeric values, returning 0.0 if field doesn't exist or is null
+     * Parse JSON string to Map<String, Object>
      */
-    private Double getDoubleValue(JsonNode node, String field) {
-        if (node.has(field) && !node.get(field).isNull()) {
-            return Math.min(100.0, node.get(field).asDouble());
+    private Map<String, Object> parseJsonToMap(String jsonString) {
+        try {
+            return objectMapper.readValue(jsonString, new TypeReference<>() {});
+        } catch (Exception e) {
+            log.error("Failed to parse JSON to map: {}", e.getMessage(), e);
+            return new LinkedHashMap<>();
         }
-        return 0.0;
     }
 }
 
