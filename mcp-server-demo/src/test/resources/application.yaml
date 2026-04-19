@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: mcp-server-test
+
+  # ── MySQL Test DataSource ────────────────────────────────────────────────────
+  datasource:
+    url: jdbc:mysql://localhost:3306/mcp_demo_test?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # ── JPA / Hibernate (Test) ────────────────────────────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: create-drop    # Create and drop tables for each test
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  # ── Spring AI MCP Server ──────────────────────────────────────────────────────
+  ai:
+    mcp:
+      server:
+        name: mysql-mcp-server-test
+        version: 1.0.0
+
+# ── Server port ───────────────────────────────────────────────────────────────
+server:
+  port: 8081
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+logging:
+  level:
+    com.mcp.mcp_server: DEBUG
+    org.springframework.ai: DEBUG
+
+

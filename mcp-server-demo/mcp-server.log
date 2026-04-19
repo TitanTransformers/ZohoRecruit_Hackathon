@@ -1,0 +1,80 @@
+2026-04-05T19:44:24.067+05:30  INFO 3195 --- [mcp-server] [main] c.mcp.mcp_server.McpServerApplication    : Starting McpServerApplication using Java 21.0.10 with PID 3195 (/Volumes/A/MCP/mcp-server/target/classes started by saurabhkumar in /Volumes/A/MCP/mcp-server)
+2026-04-05T19:44:24.068+05:30 DEBUG 3195 --- [mcp-server] [main] c.mcp.mcp_server.McpServerApplication    : Running with Spring Boot v4.0.5, Spring v7.0.6
+2026-04-05T19:44:24.069+05:30  INFO 3195 --- [mcp-server] [main] c.mcp.mcp_server.McpServerApplication    : No active profile set, falling back to 1 default profile: "default"
+2026-04-05T19:44:24.288+05:30  INFO 3195 --- [mcp-server] [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-04-05T19:44:24.349+05:30  INFO 3195 --- [mcp-server] [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 57 ms. Found 3 JPA repository interfaces.
+2026-04-05T19:44:24.442+05:30  WARN 3195 --- [mcp-server] [main] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration' of type [org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying). Is this bean getting eagerly injected/applied to a currently created BeanPostProcessor [serverAnnotatedMethodBeanPostProcessor]? Check the corresponding BeanPostProcessor declaration and its dependencies/advisors. If this bean does not have to be post-processed, declare it with ROLE_INFRASTRUCTURE.
+2026-04-05T19:44:24.443+05:30  WARN 3195 --- [mcp-server] [main] trationDelegate$BeanPostProcessorChecker : Bean 'serverAnnotatedBeanRegistry' of type [org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration$ServerMcpAnnotatedBeans] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying). Is this bean getting eagerly injected/applied to a currently created BeanPostProcessor [serverAnnotatedMethodBeanPostProcessor]? Check the corresponding BeanPostProcessor declaration and its dependencies/advisors. If this bean does not have to be post-processed, declare it with ROLE_INFRASTRUCTURE.
+2026-04-05T19:44:24.446+05:30  WARN 3195 --- [mcp-server] [main] trationDelegate$BeanPostProcessorChecker : Bean 'spring.ai.mcp.server.annotation-scanner-org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerProperties' of type [org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerProperties] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying). Is this bean getting eagerly injected/applied to a currently created BeanPostProcessor [serverAnnotatedMethodBeanPostProcessor]? Check the corresponding BeanPostProcessor declaration and its dependencies/advisors. If this bean does not have to be post-processed, declare it with ROLE_INFRASTRUCTURE.
+2026-04-05T19:44:24.514+05:30  INFO 3195 --- [mcp-server] [main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-04-05T19:44:24.542+05:30  INFO 3195 --- [mcp-server] [main] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.7.Final
+2026-04-05T19:44:24.823+05:30  INFO 3195 --- [mcp-server] [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-04-05T19:44:24.837+05:30  INFO 3195 --- [mcp-server] [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-04-05T19:44:24.960+05:30  INFO 3195 --- [mcp-server] [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@2c77344f
+2026-04-05T19:44:24.960+05:30  INFO 3195 --- [mcp-server] [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-04-05T19:44:25.020+05:30  INFO 3195 --- [mcp-server] [main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:mysql://localhost:3306/mcp_demo?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true]
+	Database driver: MySQL Connector/J
+	Database dialect: MySQLDialect
+	Database version: 8.0.36
+	Default catalog/schema: mcp_demo/undefined
+	Autocommit mode: undefined/unknown
+	Isolation level: REPEATABLE_READ [default REPEATABLE_READ]
+	JDBC fetch size: none
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-04-05T19:44:25.423+05:30  INFO 3195 --- [mcp-server] [main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-04-05T19:44:25.501+05:30  INFO 3195 --- [mcp-server] [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-05T19:44:25.545+05:30  INFO 3195 --- [mcp-server] [main] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-04-05T19:44:26.193+05:30  WARN 3195 --- [mcp-server] [main] o.s.a.m.a.p.tool.SyncMcpToolProvider     : No tool methods found in the provided tool objects: []
+2026-04-05T19:44:26.205+05:30  INFO 3195 --- [mcp-server] [main] o.s.a.m.s.c.a.McpServerAutoConfiguration : Enable tools capabilities, notification: true
+2026-04-05T19:44:26.206+05:30  INFO 3195 --- [mcp-server] [main] o.s.a.m.s.c.a.McpServerAutoConfiguration : Registered tools: 19
+2026-04-05T19:44:26.206+05:30  INFO 3195 --- [mcp-server] [main] o.s.a.m.s.c.a.McpServerAutoConfiguration : Enable resources capabilities, notification: true
+2026-04-05T19:44:26.206+05:30  INFO 3195 --- [mcp-server] [main] o.s.a.m.s.c.a.McpServerAutoConfiguration : Enable resources templates capabilities, notification: true
+2026-04-05T19:44:26.206+05:30  INFO 3195 --- [mcp-server] [main] o.s.a.m.s.c.a.McpServerAutoConfiguration : Enable prompts capabilities, notification: true
+2026-04-05T19:44:26.207+05:30  INFO 3195 --- [mcp-server] [main] o.s.a.m.s.c.a.McpServerAutoConfiguration : Enable completions capabilities
+2026-04-05T19:44:26.282+05:30  INFO 3195 --- [mcp-server] [main] c.mcp.mcp_server.McpServerApplication    : Started McpServerApplication in 2.468 seconds (process running for 2.732)
+2026-04-05T19:44:52.203+05:30  INFO 3195 --- [mcp-server] [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-04-05T19:44:52.205+05:30  INFO 3195 --- [mcp-server] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-04-05T19:44:52.214+05:30  INFO 3195 --- [mcp-server] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-04-05T19:47:47.047+05:30  INFO 4220 --- [mcp-server] [main] c.mcp.mcp_server.McpServerApplication    : Starting McpServerApplication using Java 21.0.10 with PID 4220 (/Volumes/A/MCP/mcp-server/target/classes started by saurabhkumar in /Volumes/A/MCP/mcp-server)
+2026-04-05T19:47:47.048+05:30 DEBUG 4220 --- [mcp-server] [main] c.mcp.mcp_server.McpServerApplication    : Running with Spring Boot v4.0.5, Spring v7.0.6
+2026-04-05T19:47:47.049+05:30  INFO 4220 --- [mcp-server] [main] c.mcp.mcp_server.McpServerApplication    : No active profile set, falling back to 1 default profile: "default"
+2026-04-05T19:47:47.273+05:30  INFO 4220 --- [mcp-server] [main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-04-05T19:47:47.338+05:30  INFO 4220 --- [mcp-server] [main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 61 ms. Found 3 JPA repository interfaces.
+2026-04-05T19:47:47.443+05:30  WARN 4220 --- [mcp-server] [main] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration' of type [org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying). Is this bean getting eagerly injected/applied to a currently created BeanPostProcessor [serverAnnotatedMethodBeanPostProcessor]? Check the corresponding BeanPostProcessor declaration and its dependencies/advisors. If this bean does not have to be post-processed, declare it with ROLE_INFRASTRUCTURE.
+2026-04-05T19:47:47.444+05:30  WARN 4220 --- [mcp-server] [main] trationDelegate$BeanPostProcessorChecker : Bean 'serverAnnotatedBeanRegistry' of type [org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration$ServerMcpAnnotatedBeans] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying). Is this bean getting eagerly injected/applied to a currently created BeanPostProcessor [serverAnnotatedMethodBeanPostProcessor]? Check the corresponding BeanPostProcessor declaration and its dependencies/advisors. If this bean does not have to be post-processed, declare it with ROLE_INFRASTRUCTURE.
+2026-04-05T19:47:47.447+05:30  WARN 4220 --- [mcp-server] [main] trationDelegate$BeanPostProcessorChecker : Bean 'spring.ai.mcp.server.annotation-scanner-org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerProperties' of type [org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerProperties] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying). Is this bean getting eagerly injected/applied to a currently created BeanPostProcessor [serverAnnotatedMethodBeanPostProcessor]? Check the corresponding BeanPostProcessor declaration and its dependencies/advisors. If this bean does not have to be post-processed, declare it with ROLE_INFRASTRUCTURE.
+2026-04-05T19:47:47.504+05:30  INFO 4220 --- [mcp-server] [main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-04-05T19:47:47.521+05:30  INFO 4220 --- [mcp-server] [main] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.7.Final
+2026-04-05T19:47:47.704+05:30  INFO 4220 --- [mcp-server] [main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-04-05T19:47:47.722+05:30  INFO 4220 --- [mcp-server] [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-04-05T19:47:47.845+05:30  INFO 4220 --- [mcp-server] [main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@543b0737
+2026-04-05T19:47:47.846+05:30  INFO 4220 --- [mcp-server] [main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-04-05T19:47:47.895+05:30  INFO 4220 --- [mcp-server] [main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:mysql://localhost:3306/mcp_demo?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true]
+	Database driver: MySQL Connector/J
+	Database dialect: MySQLDialect
+	Database version: 8.0.36
+	Default catalog/schema: mcp_demo/undefined
+	Autocommit mode: undefined/unknown
+	Isolation level: REPEATABLE_READ [default REPEATABLE_READ]
+	JDBC fetch size: none
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-04-05T19:47:48.261+05:30  INFO 4220 --- [mcp-server] [main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-04-05T19:47:48.326+05:30  INFO 4220 --- [mcp-server] [main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-05T19:47:48.362+05:30  INFO 4220 --- [mcp-server] [main] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-04-05T19:47:48.996+05:30  WARN 4220 --- [mcp-server] [main] o.s.a.m.a.p.tool.SyncMcpToolProvider     : No tool methods found in the provided tool objects: []
+2026-04-05T19:47:49.011+05:30  INFO 4220 --- [mcp-server] [main] o.s.a.m.s.c.a.McpServerAutoConfiguration : Enable tools capabilities, notification: true
+2026-04-05T19:47:49.012+05:30  INFO 4220 --- [mcp-server] [main] o.s.a.m.s.c.a.McpServerAutoConfiguration : Registered tools: 19
+2026-04-05T19:47:49.012+05:30  INFO 4220 --- [mcp-server] [main] o.s.a.m.s.c.a.McpServerAutoConfiguration : Enable resources capabilities, notification: true
+2026-04-05T19:47:49.013+05:30  INFO 4220 --- [mcp-server] [main] o.s.a.m.s.c.a.McpServerAutoConfiguration : Enable resources templates capabilities, notification: true
+2026-04-05T19:47:49.013+05:30  INFO 4220 --- [mcp-server] [main] o.s.a.m.s.c.a.McpServerAutoConfiguration : Enable prompts capabilities, notification: true
+2026-04-05T19:47:49.013+05:30  INFO 4220 --- [mcp-server] [main] o.s.a.m.s.c.a.McpServerAutoConfiguration : Enable completions capabilities
+2026-04-05T19:47:49.109+05:30  INFO 4220 --- [mcp-server] [main] c.mcp.mcp_server.McpServerApplication    : Started McpServerApplication in 2.298 seconds (process running for 2.492)
+2026-04-05T19:55:48.813+05:30  INFO 4220 --- [mcp-server] [SpringApplicationShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-04-05T19:55:48.818+05:30  INFO 4220 --- [mcp-server] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-04-05T19:55:48.832+05:30  INFO 4220 --- [mcp-server] [SpringApplicationShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.

@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: recruitment-mcp-server
+
+  # ── Spring AI MCP Server (Streamable HTTP transport via WebMVC) ─────────────
+  ai:
+    mcp:
+      server:
+        type: ASYNC
+        name: recruitment-mcp-server
+        version: 1.0.0
+        protocol: streamable       # Streamable HTTP (replaces legacy SSE)
+
+    # ── Anthropic Configuration - Using Claude Haiku AI ──────────────────────────
+    # Note: Set ANTHROPIC_API_KEY environment variable for authentication
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:}
+      model:
+        name: ${LLM_MODEL:claude-3-5-haiku-20241022}  # Claude Haiku model for fast processing
+
+  main:
+    banner-mode: "off"   # Disable Spring Boot startup banner
+
+# ── Server port ──────────────────────────────────────────────────────────────
+server:
+  port: 8080
+
+# ── Zoho Recruit OAuth Configuration ──────────────────────────────────────────
+zoho:
+  recruit:
+    client-id: ${ZOHO_RECRUIT_CLIENT_ID:your-client-id}
+    client-secret: ${ZOHO_RECRUIT_CLIENT_SECRET:your-client-secret}
+    grant-type: ${ZOHO_RECRUIT_GRANT_TYPE:client_credentials}
+    oauth-url: ${ZOHO_RECRUIT_OAUTH_URL:https://zohorecruit.thankfulrock-f57331b9.centralindia.azurecontainerapps.io/oauth/v2/token}
+    org-id: ${ZOHO_RECRUIT_ORG_ID:your-org-id}
+    api-base-url: ${ZOHO_RECRUIT_API_BASE_URL:https://zohorecruit.thankfulrock-f57331b9.centralindia.azurecontainerapps.io/recruit/v2}
+    candidates-endpoint: ${ZOHO_RECRUIT_CANDIDATES_ENDPOINT:/Candidates/search}
+    jobs-endpoint: ${ZOHO_RECRUIT_JOBS_ENDPOINT:/Jobs}
+    page-size: ${ZOHO_RECRUIT_PAGE_SIZE:200}
+    default-page: ${ZOHO_RECRUIT_DEFAULT_PAGE:1}
+    search-timeout-seconds: ${ZOHO_RECRUIT_SEARCH_TIMEOUT_SECONDS:30}
+
+# ── AI Enhanced Recruitment Configuration ──────────────────────────────────
+recruitment:
+  ai:
+    enabled: true
+    use-semantic-matching: true
+    confidence-threshold: 0.65
+    max-skill-suggestions: 5
+    enable-jd-optimization: true
+    model-provider: anthropic-claude  # Using Claude Haiku for intelligent analysis
+
+# ── Logging ──────────────────────────────────────────────────────────────────
+logging:
+  level:
+    com.mcp.mcp_server: DEBUG
+    org.springframework.ai: DEBUG
+  file:
+    name: ${user.home}/logs/mcp-server.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 5
