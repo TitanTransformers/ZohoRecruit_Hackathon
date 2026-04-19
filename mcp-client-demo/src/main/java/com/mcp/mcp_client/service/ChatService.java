@@ -4,11 +4,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mcp.mcp_client.dto.ChatRequest;
 import com.mcp.mcp_client.dto.ChatResponse;
+import com.mcp.mcp_client.dto.PaginatedResponse;
+import com.mcp.mcp_client.dto.RankedCandidate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,15 +42,35 @@ public class ChatService {
         logger.info("Processing chat message: {}", chatRequest.getMessage());
 
         try {
-            String response = chatClient.prompt()
+            List<RankedCandidate> response = chatClient.prompt()
                     .system("You are a helpful AI assistant with access to MCP (Model Context Protocol) tools. " +
                             "Use the available tools when needed to answer the user's questions accurately.")
                     .user(chatRequest.getMessage())
                     .call()
-                    .content();
+                    .entity(new ParameterizedTypeReference<>() {
+                    });
 
             logger.info("Claude response received successfully");
-            return response;
+
+            // Extract JSON data from response and convert to RankedCandidate list
+            List<RankedCandidate> candidates = extractCandidatesFromResponse(response);
+
+            // Set page size: use the smaller of request page size or total candidates count
+            // This ensures we get meaningful pagination based on actual data
+            int requestPageSize = chatRequest.getPageSize() > 0 ? chatRequest.getPageSize() : 10;
+            int pageSize = Math.min(requestPageSize, Math.max(candidates.size() / 5, 5)); // Min 5 items per page
+            if (candidates.size() <= requestPageSize) {
+                pageSize = candidates.size(); // If total is less than requested, use total
+            } else {
+                pageSize = requestPageSize; // Use requested page size
+            }
+
+            logger.info("Setting page size to {} for {} total candidates", pageSize, candidates.size());
+
+            // Create paginated response for the first page
+            PaginatedResponse paginatedResponse = createPaginatedResponse(candidates, 0, pageSize);
+
+            return paginatedResponse;
 
         } catch (Exception e) {
             logger.error("Error processing chat request", e);
@@ -52,6 +78,92 @@ public class ChatService {
                     "Error processing your request: " + e.getMessage()
             ).build();
         }
+    }
+
+    /**
+     * Extract candidates from the Claude response (from JSON code blocks or direct object)
+     * @param response The response text from Claude or the response object
+     * @return List of RankedCandidate objects
+     */
+    private List<RankedCandidate> extractCandidatesFromResponse(Object response) {
+        List<RankedCandidate> candidates = new ArrayList<>();
+
+        try {
+            // Check if response is already a List of RankedCandidate
+            if (response instanceof List) {
+                List<?> dataList = (List<?>) response;
+                for (Object item : dataList) {
+                    if (item instanceof RankedCandidate) {
+                        candidates.add((RankedCandidate) item);
+                    } else {
+                        // Try to convert from map/json
+                        RankedCandidate candidate = objectMapper.convertValue(item, RankedCandidate.class);
+                        candidates.add(candidate);
+                    }
+                }
+                logger.info("Extracted {} candidates from response", candidates.size());
+            } else if (response instanceof String) {
+                // If it's a string, try to extract JSON from code blocks
+                String responseStr = (String) response;
+                Object extractedData = extractJsonFromResponse(responseStr);
+
+                if (extractedData instanceof List) {
+                    List<?> dataList = (List<?>) extractedData;
+                    for (Object item : dataList) {
+                        RankedCandidate candidate = objectMapper.convertValue(item, RankedCandidate.class);
+                        candidates.add(candidate);
+                    }
+                    logger.info("Extracted {} candidates from JSON response", candidates.size());
+                } else if (extractedData instanceof Map) {
+                    // If it's a single object, wrap it in a list
+                    RankedCandidate candidate = objectMapper.convertValue(extractedData, RankedCandidate.class);
+                    candidates.add(candidate);
+                    logger.info("Extracted 1 candidate from response");
+                }
+            } else if (response instanceof Map) {
+                // Handle single candidate as Map
+                RankedCandidate candidate = objectMapper.convertValue(response, RankedCandidate.class);
+                candidates.add(candidate);
+                logger.info("Extracted 1 candidate from response");
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to extract candidates from response: {}", e.getMessage());
+        }
+
+        return candidates;
+    }
+
+    /**
+     * Create a paginated response from a list of candidates
+     * @param allCandidates The complete list of candidates
+     * @param pageNumber The page number (0-indexed)
+     * @param pageSize The size of each page
+     * @return PaginatedResponse object with pagination metadata
+     */
+    private PaginatedResponse createPaginatedResponse(List<RankedCandidate> allCandidates, int pageNumber, int pageSize) {
+        logger.debug("Creating paginated response for page {} with page size {}", pageNumber, pageSize);
+
+        int totalItems = allCandidates.size();
+        int totalPages = (int) Math.ceil((double) totalItems / pageSize);
+
+        int startIndex = pageNumber * pageSize;
+        int endIndex = Math.min(startIndex + pageSize, totalItems);
+
+        // Get candidates for this page
+        List<RankedCandidate> pageCandidates = allCandidates.subList(startIndex, endIndex);
+
+        boolean hasNext = pageNumber < totalPages - 1;
+        boolean hasPrevious = pageNumber > 0;
+
+        return PaginatedResponse.builder()
+                .candidates(pageCandidates)
+                .page(pageNumber)
+                .pageSize(pageSize)
+                .totalPages(totalPages)
+                .totalItems(totalItems)
+                .hasNext(hasNext)
+                .hasPrevious(hasPrevious)
+                .build();
     }
 
     /**

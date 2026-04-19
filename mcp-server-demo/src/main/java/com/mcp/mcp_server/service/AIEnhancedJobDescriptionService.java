@@ -126,21 +126,8 @@ public class AIEnhancedJobDescriptionService {
      */
     private JobDescription buildJobDescriptionFromAIAnalysis(String aiResponse, String originalJD) {
         try {
-            // Clean the response (remove markdown code blocks if present)
-            String cleanedResponse = aiResponse
-                    .replaceAll("```json\\n?", "")
-                    .replaceAll("```\\n?", "")
-                    .trim();
-
-            // Try to extract JSON if there's extra text (Claude might add explanation)
-            // Look for the first { and last } to extract just the JSON
-            int jsonStart = cleanedResponse.indexOf('{');
-            int jsonEnd = cleanedResponse.lastIndexOf('}');
-
-            if (jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart) {
-                cleanedResponse = cleanedResponse.substring(jsonStart, jsonEnd + 1);
-                log.debug("Extracted JSON from response: {}", cleanedResponse);
-            }
+            String cleanedResponse = extractAndValidateJSON(aiResponse);
+            log.debug("Parsing cleaned JSON response: {}", cleanedResponse);
 
             JsonNode jsonNode = objectMapper.readTree(cleanedResponse);
 
@@ -157,9 +144,92 @@ public class AIEnhancedJobDescriptionService {
                     .location(getTextValue(jsonNode, "location", "Not Specified"))
                     .build();
         } catch (Exception e) {
-            log.error("Failed to parse AI response: {}", aiResponse, e);
+            log.error("Failed to parse AI response. Response preview: {}",
+                    aiResponse.length() > 500 ? aiResponse.substring(0, 500) + "..." : aiResponse, e);
             throw new RuntimeException("Failed to parse AI response for job description: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Extract valid JSON from AI response with robust error handling
+     * Handles markdown code blocks and validates JSON structure
+     */
+    private String extractAndValidateJSON(String aiResponse) {
+        if (aiResponse == null || aiResponse.trim().isEmpty()) {
+            throw new IllegalArgumentException("AI response is empty or null");
+        }
+
+        // Step 1: Remove markdown code blocks
+        String cleaned = aiResponse
+                .replaceAll("```(?:json)?\\s*\\n?", "")
+                .replaceAll("```\\s*\\n?", "")
+                .trim();
+
+        // Step 2: Extract JSON using bracket matching for robustness
+        String extracted = extractJsonByBracketMatching(cleaned);
+
+        if (extracted == null || extracted.isEmpty()) {
+            log.error("Could not extract valid JSON from response: {}", cleaned.substring(0, Math.min(200, cleaned.length())));
+            throw new IllegalArgumentException("No valid JSON object found in AI response");
+        }
+
+        return extracted;
+    }
+
+    /**
+     * Extract JSON from text using proper bracket matching
+     * This avoids the naive "first { to last }" approach
+     */
+    private String extractJsonByBracketMatching(String text) {
+        int startIdx = text.indexOf('{');
+        if (startIdx == -1) {
+            return null;
+        }
+
+        int braceCount = 0;
+        boolean inString = false;
+        boolean previousCharEscaped = false;
+
+        for (int i = startIdx; i < text.length(); i++) {
+            char c = text.charAt(i);
+            boolean currentCharEscaped = false;
+
+            // Check if current character is escaped
+            if (c == '\\' && inString && !previousCharEscaped) {
+                currentCharEscaped = true;
+            }
+
+            // Handle string boundaries (only if not escaped)
+            if (c == '"' && !previousCharEscaped) {
+                inString = !inString;
+            }
+
+            // Only count braces outside of strings
+            if (!inString) {
+                if (c == '{') {
+                    braceCount++;
+                } else if (c == '}') {
+                    braceCount--;
+                    if (braceCount == 0) {
+                        // Found matching closing brace
+                        String potential = text.substring(startIdx, i + 1);
+                        log.debug("Extracted potential JSON: {}", potential.substring(0, Math.min(100, potential.length())) + "...");
+                        return potential;
+                    }
+                }
+            }
+
+            // Update escape status for next iteration
+            previousCharEscaped = currentCharEscaped;
+        }
+
+        // If we get here, JSON was not properly closed
+        if (braceCount > 0) {
+            log.warn("Unclosed JSON object - found {} unmatched opening braces", braceCount);
+            return null;
+        }
+
+        return null;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
