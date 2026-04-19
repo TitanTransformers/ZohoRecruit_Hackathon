@@ -147,7 +147,7 @@ class CandidateService {
     });
 
     // Sort by matchPercentage in descending order
-    return normalized.sort((a, b) => b.matchPercentage - a.matchPercentage);
+    return normalized.sort((a, b) => (b.matchPercentage ?? 0) - (a.matchPercentage ?? 0));
   }
 
   /**

@@ -155,7 +155,11 @@ const CandidateResultsTable: React.FC<CandidateResultsTableProps> = ({
           </TableRow>
         </StyledTableHead>
         <TableBody>
-          {candidates.map((candidate, rowIndex) => (
+          {candidates.map((candidate, rowIndex) => {
+            const matchedPercentage = candidate.matchedPercentage ?? 0;
+            const analysisText = candidate.analysis ?? '';
+
+            return (
             <StyledTableRow key={rowIndex}>
               {/* Name */}
               <TableCell align="left">
@@ -181,8 +185,8 @@ const CandidateResultsTable: React.FC<CandidateResultsTableProps> = ({
                   <Box sx={{ width: '100%' }}>
                     <LinearProgress
                       variant="determinate"
-                      value={candidate.matchedPercentage}
-                      color={getMatchPercentageColor(candidate.matchedPercentage)}
+                      value={matchedPercentage}
+                      color={getMatchPercentageColor(matchedPercentage)}
                       sx={{
                         height: 6,
                         borderRadius: 3,
@@ -193,11 +197,11 @@ const CandidateResultsTable: React.FC<CandidateResultsTableProps> = ({
                     variant="body2"
                     sx={{
                       fontWeight: 700,
-                      color: `${getMatchPercentageColor(candidate.matchedPercentage)}.main`,
+                      color: `${getMatchPercentageColor(matchedPercentage)}.main`,
                       fontSize: '0.85rem',
                     }}
                   >
-                    {candidate.matchedPercentage.toFixed(0)}%
+                    {matchedPercentage.toFixed(0)}%
                   </Typography>
                 </MatchPercentageCell>
               </TableCell>
@@ -276,7 +280,7 @@ const CandidateResultsTable: React.FC<CandidateResultsTableProps> = ({
 
               {/* Analysis - Hidden on smaller screens */}
               <TableCell align="left" sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
-                <Tooltip title={candidate.analysis}>
+                <Tooltip title={analysisText}>
                   <Typography
                     variant="caption"
                     sx={{
@@ -287,13 +291,14 @@ const CandidateResultsTable: React.FC<CandidateResultsTableProps> = ({
                       overflow: 'hidden',
                     }}
                   >
-                    {truncateText(candidate.analysis, 120)}
+                    {truncateText(analysisText, 120)}
                   </Typography>
                 </Tooltip>
               </TableCell>
 
             </StyledTableRow>
-          ))}
+            );
+          })}
         </TableBody>
       </Table>
     </ResultsTableContainer>
