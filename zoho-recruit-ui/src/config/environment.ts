@@ -28,7 +28,7 @@ const getEnvironmentBoolean = (key: string, defaultValue: boolean = false): bool
 };
 
 const envConfig: EnvironmentConfig = {
-  apiBaseUrl: getEnvironmentVariable('API_BASE_URL', 'http://localhost:8081'),
+  apiBaseUrl: getEnvironmentVariable('API_BASE_URL', ''),
   apiChatEndpoint: getEnvironmentVariable('API_CHAT_ENDPOINT', '/api/chat/send'),
   apiDocumentsEndpoint: getEnvironmentVariable('API_DOCUMENTS_ENDPOINT', '/api/documents/process'),
   enableDebugMode: getEnvironmentBoolean('ENABLE_DEBUG_MODE', false),

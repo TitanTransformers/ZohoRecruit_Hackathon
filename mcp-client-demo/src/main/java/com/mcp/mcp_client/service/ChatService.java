@@ -13,7 +13,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
+import org.xml.sax.InputSource;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +32,7 @@ public class ChatService {
     private static final Pattern XML_CODE_BLOCK_PATTERN = Pattern.compile("```xml\\s*\\n([\\s\\S]*?)\\n```");
     private static final Pattern PAGE_SIZE_PATTERN = Pattern.compile(
             "(?:top|first|show|display|list|get|fetch|return|give me|find)\\s+(\\d+)|" +
-            "(\\d+)\\s+(?:candidates|results|records|entries|people|profiles|resumes)",
+                    "(\\d+)\\s+(?:candidates|results|records|entries|people|profiles|resumes)",
             Pattern.CASE_INSENSITIVE
     );
 
@@ -46,6 +49,7 @@ public class ChatService {
     }
     public ChatService(ChatClient chatClient) {
         this.chatClient = chatClient;
+
         logger.info("ChatService initialized with MCP-enabled ChatClient");
     }
 
@@ -79,14 +83,17 @@ public class ChatService {
             // Extract JSON data from response and convert to RankedCandidate list
             List<RankedCandidate> candidates = extractCandidatesFromResponse(response);
 
-            // Set page size dynamically based on actual data returned, not hardcoded
-            int pageSize = candidates.size();
+            // Set page size: use the smaller of request page size or total candidates count
+            // This ensures we get meaningful pagination based on actual data
+            int pageSize = Math.min(candidates.size(), requestPageSize); // Min 5 items per page
+            // Use requested page size
+            // If total is less than requested, use total
 
             logger.info("Setting page size to {} (actual data size) for {} total candidates", pageSize, candidates.size());
 
             // Create paginated response for the first page
 
-            return createPaginatedResponse(candidates, 0, pageSize);
+            return createPaginatedResponse(candidates, pageSize);
 
         } catch (Exception e) {
             logger.error("Error processing chat request", e);
@@ -106,8 +113,7 @@ public class ChatService {
 
         try {
             // Check if response is already a List of RankedCandidate
-            if (response instanceof List) {
-                List<?> dataList = (List<?>) response;
+            if (response instanceof List<?> dataList) {
                 for (Object item : dataList) {
                     if (item instanceof RankedCandidate) {
                         candidates.add((RankedCandidate) item);
@@ -118,13 +124,11 @@ public class ChatService {
                     }
                 }
                 logger.info("Extracted {} candidates from response", candidates.size());
-            } else if (response instanceof String) {
+            } else if (response instanceof String responseStr) {
                 // If it's a string, try to extract JSON from code blocks
-                String responseStr = (String) response;
                 Object extractedData = extractJsonFromResponse(responseStr);
 
-                if (extractedData instanceof List) {
-                    List<?> dataList = (List<?>) extractedData;
+                if (extractedData instanceof List<?> dataList) {
                     for (Object item : dataList) {
                         RankedCandidate candidate = objectMapper.convertValue(item, RankedCandidate.class);
                         candidates.add(candidate);
@@ -151,29 +155,29 @@ public class ChatService {
 
     /**
      * Create a paginated response from a list of candidates
+     *
      * @param allCandidates The complete list of candidates
-     * @param pageNumber The page number (0-indexed)
-     * @param pageSize The size of each page
+     * @param pageSize      The size of each page
      * @return PaginatedResponse object with pagination metadata
      */
-    private PaginatedResponse createPaginatedResponse(List<RankedCandidate> allCandidates, int pageNumber, int pageSize) {
-        logger.debug("Creating paginated response for page {} with page size {}", pageNumber, pageSize);
+    private PaginatedResponse createPaginatedResponse(List<RankedCandidate> allCandidates, int pageSize) {
+        logger.debug("Creating paginated response for page {} with page size {}", 0, pageSize);
 
         int totalItems = allCandidates.size();
         int totalPages = (int) Math.ceil((double) totalItems / pageSize);
 
-        int startIndex = pageNumber * pageSize;
+        int startIndex = 0;
         int endIndex = Math.min(startIndex + pageSize, totalItems);
 
         // Get candidates for this page
         List<RankedCandidate> pageCandidates = allCandidates.subList(startIndex, endIndex);
 
-        boolean hasNext = pageNumber < totalPages - 1;
-        boolean hasPrevious = pageNumber > 0;
+        boolean hasNext = 0 < totalPages - 1;
+        boolean hasPrevious = false;
 
         return PaginatedResponse.builder()
                 .candidates(pageCandidates)
-                .page(pageNumber)
+                .page(0)
                 .pageSize(pageSize)
                 .totalPages(totalPages)
                 .totalItems(totalItems)
@@ -229,9 +233,9 @@ public class ChatService {
 
                 // Validate it's valid XML
                 try {
-                    javax.xml.parsers.DocumentBuilderFactory.newInstance()
+                    DocumentBuilderFactory.newInstance()
                             .newDocumentBuilder()
-                            .parse(new org.xml.sax.InputSource(new java.io.StringReader(xmlStr)));
+                            .parse(new InputSource(new StringReader(xmlStr)));
                     logger.debug("Successfully validated XML data");
                     return xmlStr;
                 } catch (Exception e) {

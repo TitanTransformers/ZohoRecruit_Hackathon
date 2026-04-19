@@ -16,7 +16,7 @@ spring:
         streamable-http:
           connections:
             my-mcp-server:
-              url: http://localhost:8080/mcp     # Streamable HTTP endpoint on MCP server
+              url: ${MCP_SERVER_URL:http://localhost:8080/mcp}     # Streamable HTTP endpoint on MCP server
 logging:
   level:
     root: INFO
