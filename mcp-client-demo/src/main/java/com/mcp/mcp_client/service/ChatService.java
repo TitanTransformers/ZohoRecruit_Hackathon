@@ -1,5 +1,7 @@
 package com.mcp.mcp_client.service;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mcp.mcp_client.dto.ChatRequest;
@@ -22,12 +24,26 @@ import java.util.regex.Pattern;
 public class ChatService {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatService.class);
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper;
     private static final Pattern JSON_CODE_BLOCK_PATTERN = Pattern.compile("```json\\s*\\n([\\s\\S]*?)\\n```");
     private static final Pattern XML_CODE_BLOCK_PATTERN = Pattern.compile("```xml\\s*\\n([\\s\\S]*?)\\n```");
+    private static final Pattern PAGE_SIZE_PATTERN = Pattern.compile(
+            "(?:top|first|show|display|list|get|fetch|return|give me|find)\\s+(\\d+)|" +
+            "(\\d+)\\s+(?:candidates|results|records|entries|people|profiles|resumes)",
+            Pattern.CASE_INSENSITIVE
+    );
 
     private final ChatClient chatClient;
 
+    static {
+        objectMapper = new ObjectMapper();
+        // Be lenient with AI-generated JSON
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+        objectMapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
+        objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+        objectMapper.configure(JsonParser.Feature.ALLOW_TRAILING_COMMA, true);
+    }
     public ChatService(ChatClient chatClient) {
         this.chatClient = chatClient;
         logger.info("ChatService initialized with MCP-enabled ChatClient");
@@ -42,9 +58,17 @@ public class ChatService {
         logger.info("Processing chat message: {}", chatRequest.getMessage());
 
         try {
+            int requestPageSize = extractPageSizeFromPrompt(chatRequest.getMessage());
+            if (requestPageSize <= 0) {
+                requestPageSize = chatRequest.getPageSize() > 0 ? chatRequest.getPageSize() : 10;
+            }
+            logger.info("Resolved page size: {} from user prompt", requestPageSize);
+
             List<RankedCandidate> response = chatClient.prompt()
                     .system("You are a helpful AI assistant with access to MCP (Model Context Protocol) tools. " +
-                            "Use the available tools when needed to answer the user's questions accurately.")
+                            "Use the available tools when needed to answer the user's questions accurately. " +
+                            "The user has requested a page size of " + requestPageSize + " results. " +
+                            "Please return up to " + requestPageSize + " most relevant candidates.")
                     .user(chatRequest.getMessage())
                     .call()
                     .entity(new ParameterizedTypeReference<>() {
@@ -55,22 +79,14 @@ public class ChatService {
             // Extract JSON data from response and convert to RankedCandidate list
             List<RankedCandidate> candidates = extractCandidatesFromResponse(response);
 
-            // Set page size: use the smaller of request page size or total candidates count
-            // This ensures we get meaningful pagination based on actual data
-            int requestPageSize = chatRequest.getPageSize() > 0 ? chatRequest.getPageSize() : 10;
-            int pageSize = Math.min(requestPageSize, Math.max(candidates.size() / 5, 5)); // Min 5 items per page
-            if (candidates.size() <= requestPageSize) {
-                pageSize = candidates.size(); // If total is less than requested, use total
-            } else {
-                pageSize = requestPageSize; // Use requested page size
-            }
+            // Set page size dynamically based on actual data returned, not hardcoded
+            int pageSize = candidates.size();
 
-            logger.info("Setting page size to {} for {} total candidates", pageSize, candidates.size());
+            logger.info("Setting page size to {} (actual data size) for {} total candidates", pageSize, candidates.size());
 
             // Create paginated response for the first page
-            PaginatedResponse paginatedResponse = createPaginatedResponse(candidates, 0, pageSize);
 
-            return paginatedResponse;
+            return createPaginatedResponse(candidates, 0, pageSize);
 
         } catch (Exception e) {
             logger.error("Error processing chat request", e);
@@ -173,16 +189,16 @@ public class ChatService {
     private Object extractJsonFromResponse(String response) {
         try {
             Matcher matcher = JSON_CODE_BLOCK_PATTERN.matcher(response);
-            
+
             if (matcher.find()) {
                 String jsonStr = matcher.group(1).trim();
                 logger.debug("Found JSON code block, parsing...");
-                
+
                 try {
                     // Try to parse as JSON
                     JsonNode jsonNode = objectMapper.readTree(jsonStr);
                     logger.debug("Successfully parsed JSON data");
-                    
+
                     // If it's an array or object, return the parsed structure
                     if (jsonNode.isArray() || jsonNode.isObject()) {
                         return objectMapper.readValue(jsonStr, Object.class);
@@ -194,7 +210,7 @@ public class ChatService {
         } catch (Exception e) {
             logger.debug("Error extracting JSON from response: {}", e.getMessage());
         }
-        
+
         return null;
     }
 
@@ -206,7 +222,7 @@ public class ChatService {
     private String extractXmlFromResponse(String response) {
         try {
             Matcher matcher = XML_CODE_BLOCK_PATTERN.matcher(response);
-            
+
             if (matcher.find()) {
                 String xmlStr = matcher.group(1).trim();
                 logger.debug("Found XML code block");
@@ -225,7 +241,29 @@ public class ChatService {
         } catch (Exception e) {
             logger.debug("Error extracting XML from response: {}", e.getMessage());
         }
-        
+
         return null;
+    }
+
+    /**
+     * Extract page size from the user's natural language prompt.
+     * Matches patterns like "top 20", "show 30 candidates", "first 15 results", etc.
+     * @param message The user's prompt message
+     * @return The extracted page size, or -1 if not found
+     */
+    private int extractPageSizeFromPrompt(String message) {
+        if (message == null || message.isBlank()) return -1;
+        Matcher matcher = PAGE_SIZE_PATTERN.matcher(message);
+        if (matcher.find()) {
+            String num = matcher.group(1) != null ? matcher.group(1) : matcher.group(2);
+            try {
+                int size = Integer.parseInt(num);
+                logger.info("Extracted page size {} from user prompt: '{}'", size, message);
+                return size;
+            } catch (NumberFormatException e) {
+                // ignore
+            }
+        }
+        return -1;
     }
 }
