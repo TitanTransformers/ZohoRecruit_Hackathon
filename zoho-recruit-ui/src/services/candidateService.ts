@@ -84,10 +84,24 @@ class CandidateService {
     }
 
     const data: ApiResponse<CandidateProfile[]> = await response.json();
-    debugLog('API Response received', data);
+    console.log('API Response received', data);
 
-    // Support multiple response formats
-    const candidates = this.extractCandidates(data);
+    // Support multiple response formats including new pagination format
+    let candidates: CandidateProfile[] = [];
+
+    if (data?.pagination?.content && Array.isArray(data.pagination.content)) {
+      // New pagination format
+      candidates = data.pagination.content;
+      debugLog('Pagination info', {
+        page: data.pagination.page,
+        total_items: data.pagination.total_items,
+        total_pages: data.pagination.total_pages,
+        has_next: data.pagination.has_next,
+      });
+    } else {
+      // Legacy formats
+      candidates = data?.response || data?.data || data?.results || data?.candidates || [];
+    }
 
     if (!candidates || candidates.length === 0) {
       throw new Error('No candidate profiles found matching the job description');
@@ -97,50 +111,43 @@ class CandidateService {
   }
 
   /**
-   * Extract candidates from various API response formats
-   * @param data - API response data
-   * @returns Array of candidates or null
-   */
-  private extractCandidates(data: ApiResponse<CandidateProfile[]>): CandidateProfile[] | null {
-    // Check for direct array response
-    if (Array.isArray(data)) {
-      return data as CandidateProfile[];
-    }
-
-    // Check for nested array in various properties
-    if (data.results && Array.isArray(data.results)) {
-      return data.results;
-    }
-
-    if (data.candidates && Array.isArray(data.candidates)) {
-      return data.candidates;
-    }
-
-    if (data.data && Array.isArray(data.data)) {
-      return data.data;
-    }
-
-    return null;
-  }
-
-  /**
    * Validate and normalize candidate data
    * @param candidates - Array of candidate profiles
-   * @returns Validated candidate profiles
+   * @returns Validated candidate profiles sorted by matchPercentage (descending)
    */
   private validateAndNormalizeCandidates(candidates: CandidateProfile[]): CandidateProfile[] {
-    return candidates.map((candidate) => {
+    const normalized = candidates.map((candidate) => {
+      // Use new field names, with fallback to legacy names
+      const matchedSkills = Array.isArray(candidate.matchedSkills) 
+        ? candidate.matchedSkills 
+        : (Array.isArray(candidate.matchedSkill) ? candidate.matchedSkill : []);
+      
+      const matchPercentage = typeof candidate.matchPercentage === 'number'
+        ? candidate.matchPercentage
+        : (typeof candidate.matchedPercentage === 'number' ? candidate.matchedPercentage : 0);
+
       return {
+        candidateId: candidate.candidateId || 'N/A',
         name: candidate.name || 'N/A',
         email: candidate.email || 'N/A',
-        matchedSkill: Array.isArray(candidate.matchedSkill) ? candidate.matchedSkill : [],
-        missingSkills: Array.isArray(candidate.missingSkills) ? candidate.missingSkills : [],
-        analysis: candidate.analysis || 'No analysis available',
-        matchedPercentage: typeof candidate.matchedPercentage === 'number' 
-          ? Math.min(100, Math.max(0, candidate.matchedPercentage))
+        phone: candidate.phone || 'N/A',
+        rankPosition: candidate.rankPosition || 0,
+        matchPercentage: Math.min(100, Math.max(0, matchPercentage)),
+        skillMatchPercentage: typeof candidate.skillMatchPercentage === 'number'
+          ? Math.min(100, Math.max(0, candidate.skillMatchPercentage))
           : 0,
+        experienceMatchPercentage: typeof candidate.experienceMatchPercentage === 'number'
+          ? Math.min(100, Math.max(0, candidate.experienceMatchPercentage))
+          : 0,
+        matchedSkills: matchedSkills,
+        missingSkills: Array.isArray(candidate.missingSkills) ? candidate.missingSkills : [],
+        matchReasoning: candidate.matchReasoning || 'No reasoning available',
+        fitAnalysis: candidate.fitAnalysis || 'No analysis available',
       };
     });
+
+    // Sort by matchPercentage in descending order
+    return normalized.sort((a, b) => b.matchPercentage - a.matchPercentage);
   }
 
   /**

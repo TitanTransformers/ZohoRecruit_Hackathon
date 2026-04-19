@@ -17,48 +17,75 @@ import type { CandidateProfile } from '../types/candidate';
 
 // Styled Components
 const ResultsTableContainer = styled(TableContainer)(({ theme }) => ({
-  marginTop: theme.spacing(3),
-  borderRadius: theme.spacing(1.5),
+  marginTop: theme.spacing(2),
+  borderRadius: '12px',
   background: theme.palette.mode === 'light'
     ? 'rgba(255, 255, 255, 0.95)'
-    : 'rgba(255, 255, 255, 0.05)',
+    : 'rgba(255, 255, 255, 0.04)',
   backdropFilter: 'blur(10px)',
   border: `1px solid ${theme.palette.divider}`,
+  width: '100%',
+  overflow: 'auto',
+  boxShadow: theme.palette.mode === 'light'
+    ? '0 4px 12px rgba(99, 102, 241, 0.08)'
+    : '0 4px 12px rgba(99, 102, 241, 0.15)',
+  [theme.breakpoints.down('sm')]: {
+    borderRadius: '10px',
+  },
 }));
 
 const StyledTableHead = styled(TableHead)(({ theme }) => ({
   '& .MuiTableCell-head': {
-    background: `linear-gradient(135deg, ${theme.palette.primary.main}20 0%, ${theme.palette.primary.main}10 100%)`,
+    background: `linear-gradient(135deg, ${theme.palette.primary.main}15 0%, ${theme.palette.primary.main}08 100%)`,
     fontWeight: 700,
     color: theme.palette.primary.main,
-    borderBottom: `2px solid ${theme.palette.primary.main}40`,
+    borderBottom: `1.5px solid ${theme.palette.primary.main}30`,
     whiteSpace: 'nowrap',
+    padding: theme.spacing(1.75, 2),
+    fontSize: '0.95rem',
+    [theme.breakpoints.down('sm')]: {
+      fontSize: '0.85rem',
+      padding: theme.spacing(1.5, 1),
+    },
   },
 }));
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
-  transition: 'all 0.2s ease',
+  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
   '&:hover': {
     background: theme.palette.mode === 'light'
-      ? 'rgba(63, 81, 181, 0.05)'
-      : 'rgba(99, 125, 234, 0.08)',
+      ? 'rgba(99, 102, 241, 0.06)'
+      : 'rgba(129, 140, 248, 0.1)',
   },
   '& .MuiTableCell-body': {
-    padding: theme.spacing(2),
+    padding: theme.spacing(1.75, 2),
+    fontSize: '0.95rem',
+    [theme.breakpoints.down('sm')]: {
+      padding: theme.spacing(1.25, 1),
+      fontSize: '0.85rem',
+    },
   },
 }));
 
 const SkillChip = styled(Chip)(({ theme }) => ({
   margin: theme.spacing(0.5),
-  fontSize: '0.85rem',
+  fontSize: '0.8rem',
   fontWeight: 500,
+  borderRadius: '6px',
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '0.7rem',
+    margin: theme.spacing(0.3),
+  },
 }));
 
 const MatchPercentageCell = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: theme.spacing(1),
-  minWidth: '150px',
+  minWidth: '140px',
+  [theme.breakpoints.down('sm')]: {
+    minWidth: '100px',
+  },
 }));
 
 interface CandidateResultsTableProps {
@@ -94,36 +121,36 @@ const CandidateResultsTable: React.FC<CandidateResultsTableProps> = ({
       {loading && (
         <LinearProgress
           sx={{
-            height: 4,
-            borderRadius: 1.5,
-            background: 'rgba(63, 81, 181, 0.1)',
+            height: 3,
+            borderRadius: '12px 12px 0 0',
+            background: 'rgba(99, 102, 241, 0.08)',
             '& .MuiLinearProgress-bar': {
-              borderRadius: 1.5,
+              borderRadius: '12px',
               background: (theme) => `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
             },
           }}
         />
       )}
-      <Table stickyHeader={loading}>
+      <Table stickyHeader={loading} sx={{ width: '100%', tableLayout: 'auto' }}>
         <StyledTableHead>
           <TableRow>
-            <TableCell align="left" sx={{ minWidth: '150px' }}>
+            <TableCell align="left" sx={{ minWidth: { xs: '120px', sm: '150px' } }}>
               Name
             </TableCell>
-            <TableCell align="left" sx={{ minWidth: '200px' }}>
+            <TableCell align="center" sx={{ minWidth: { xs: '110px', sm: '160px' } }}>
+              Match %
+            </TableCell>
+            <TableCell align="left" sx={{ minWidth: { xs: '140px', sm: '200px' }, display: { xs: 'none', sm: 'table-cell' } }}>
               Email
             </TableCell>
-            <TableCell align="left" sx={{ minWidth: '250px' }}>
+            <TableCell align="left" sx={{ minWidth: { xs: '100px', sm: '220px' } }}>
               Matched Skills
             </TableCell>
-            <TableCell align="left" sx={{ minWidth: '250px' }}>
+            <TableCell align="left" sx={{ minWidth: { xs: '100px', sm: '220px' }, display: { xs: 'none', md: 'table-cell' } }}>
               Missing Skills
             </TableCell>
-            <TableCell align="left" sx={{ minWidth: '250px' }}>
+            <TableCell align="left" sx={{ minWidth: { xs: '90px', sm: '200px' }, display: { xs: 'none', lg: 'table-cell' } }}>
               Analysis
-            </TableCell>
-            <TableCell align="center" sx={{ minWidth: '180px' }}>
-              Match Percentage
             </TableCell>
           </TableRow>
         </StyledTableHead>
@@ -132,16 +159,51 @@ const CandidateResultsTable: React.FC<CandidateResultsTableProps> = ({
             <StyledTableRow key={rowIndex}>
               {/* Name */}
               <TableCell align="left">
-                <Typography
-                  variant="body2"
-                  sx={{ fontWeight: 600, color: 'text.primary' }}
-                >
-                  {candidate.name}
-                </Typography>
+                <Tooltip title={candidate.name}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 700,
+                      color: 'text.primary',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {candidate.name}
+                  </Typography>
+                </Tooltip>
               </TableCell>
 
-              {/* Email */}
-              <TableCell align="left">
+              {/* Match Percentage */}
+              <TableCell align="center">
+                <MatchPercentageCell sx={{ flexDirection: 'column', gap: 0.5 }}>
+                  <Box sx={{ width: '100%' }}>
+                    <LinearProgress
+                      variant="determinate"
+                      value={candidate.matchedPercentage}
+                      color={getMatchPercentageColor(candidate.matchedPercentage)}
+                      sx={{
+                        height: 6,
+                        borderRadius: 3,
+                      }}
+                    />
+                  </Box>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 700,
+                      color: `${getMatchPercentageColor(candidate.matchedPercentage)}.main`,
+                      fontSize: '0.85rem',
+                    }}
+                  >
+                    {candidate.matchedPercentage.toFixed(0)}%
+                  </Typography>
+                </MatchPercentageCell>
+              </TableCell>
+
+              {/* Email - Hidden on mobile */}
+              <TableCell align="left" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                 <Tooltip title={candidate.email}>
                   <Typography
                     variant="body2"
@@ -150,11 +212,14 @@ const CandidateResultsTable: React.FC<CandidateResultsTableProps> = ({
                       textDecoration: 'none',
                       cursor: 'pointer',
                       '&:hover': { textDecoration: 'underline' },
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
                     }}
                     component="a"
                     href={`mailto:${candidate.email}`}
                   >
-                    {truncateText(candidate.email, 40)}
+                    {truncateText(candidate.email, 35)}
                   </Typography>
                 </Tooltip>
               </TableCell>
@@ -180,11 +245,11 @@ const CandidateResultsTable: React.FC<CandidateResultsTableProps> = ({
                 </Box>
               </TableCell>
 
-              {/* Missing Skills */}
-              <TableCell align="left">
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+              {/* Missing Skills - Hidden on mobile */}
+              <TableCell align="left" sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.4 }}>
                   {candidate.missingSkills && candidate.missingSkills.length > 0 ? (
-                    candidate.missingSkills.map((skill, idx) => (
+                    candidate.missingSkills.slice(0, 2).map((skill, idx) => (
                       <SkillChip
                         key={idx}
                         label={skill}
@@ -195,57 +260,38 @@ const CandidateResultsTable: React.FC<CandidateResultsTableProps> = ({
                     ))
                   ) : (
                     <Typography variant="caption" color="text.secondary">
-                      No missing skills
+                      —
                     </Typography>
+                  )}
+                  {candidate.missingSkills && candidate.missingSkills.length > 2 && (
+                    <Chip
+                      label={`+${candidate.missingSkills.length - 2}`}
+                      size="small"
+                      variant="outlined"
+                      sx={{ fontSize: '0.7rem' }}
+                    />
                   )}
                 </Box>
               </TableCell>
 
-              {/* Analysis */}
-              <TableCell align="left">
+              {/* Analysis - Hidden on smaller screens */}
+              <TableCell align="left" sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                 <Tooltip title={candidate.analysis}>
                   <Typography
                     variant="caption"
                     sx={{
                       color: 'text.secondary',
                       display: '-webkit-box',
-                      WebkitLineClamp: 3,
+                      WebkitLineClamp: 2,
                       WebkitBoxOrient: 'vertical',
                       overflow: 'hidden',
                     }}
                   >
-                    {truncateText(candidate.analysis, 150)}
+                    {truncateText(candidate.analysis, 120)}
                   </Typography>
                 </Tooltip>
               </TableCell>
 
-              {/* Match Percentage */}
-              <TableCell align="center">
-                <MatchPercentageCell>
-                  <Box sx={{ width: '60px' }}>
-                    <LinearProgress
-                      variant="determinate"
-                      value={candidate.matchedPercentage}
-                      color={getMatchPercentageColor(candidate.matchedPercentage)}
-                      sx={{
-                        height: 8,
-                        borderRadius: 4,
-                        marginBottom: 0.5,
-                      }}
-                    />
-                  </Box>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontWeight: 700,
-                      color: `${getMatchPercentageColor(candidate.matchedPercentage)}.main`,
-                      minWidth: '45px',
-                    }}
-                  >
-                    {candidate.matchedPercentage.toFixed(1)}%
-                  </Typography>
-                </MatchPercentageCell>
-              </TableCell>
             </StyledTableRow>
           ))}
         </TableBody>
