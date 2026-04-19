@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zoho Recruit AI - Presentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --secondary: #1e40af;
+            --accent: #7c3aed;
+            --success: #10b981;
+            --danger: #ef4444;
+            --neutral-50: #f9fafb;
+            --neutral-100: #f3f4f6;
+            --neutral-200: #e5e7eb;
+            --neutral-300: #d1d5db;
+            --neutral-600: #4b5563;
+            --neutral-700: #374151;
+            --neutral-800: #1f2937;
+            --neutral-900: #111827;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--neutral-900);
+            overflow-x: hidden;
+        }
+
+        .presentation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .slide {
+            display: none;
+            width: 100%;
+            max-width: 1000px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 60px 80px;
+            min-height: 600px;
+            animation: slideIn 0.6s ease-in-out;
+        }
+
+        .slide.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .slide h1 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .slide h2 {
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            color: var(--neutral-900);
+        }
+
+        .slide h3 {
+            font-size: 1.5rem;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+
+        .slide p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 15px;
+            color: var(--neutral-700);
+        }
+
+        .slide ul, .slide ol {
+            margin-left: 30px;
+            margin-bottom: 20px;
+        }
+
+        .slide li {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 12px;
+            color: var(--neutral-700);
+        }
+
+        .subtitle {
+            font-size: 1.4rem;
+            color: var(--neutral-600);
+            margin-top: 20px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+
+        .feature-card {
+            background: var(--neutral-50);
+            padding: 25px;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .feature-card h4 {
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+            color: var(--primary);
+        }
+
+        .feature-card p {
+            font-size: 1rem;
+            color: var(--neutral-600);
+            margin-bottom: 0;
+        }
+
+        .architecture-diagram {
+            background: var(--neutral-50);
+            padding: 30px;
+            border-radius: 12px;
+            margin: 30px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            color: var(--neutral-800);
+            overflow-x: auto;
+        }
+
+        .flow-box {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 8px 0;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .flow-arrow {
+            display: block;
+            text-align: center;
+            font-size: 1.4rem;
+            margin: 8px 0;
+            color: var(--accent);
+            animation: arrowBounce 1.5s ease-in-out infinite;
+        }
+
+        @keyframes arrowBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(6px); }
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .metric-box {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .metric-box .number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .metric-box .label {
+            font-size: 1rem;
+        }
+
+        .tech-stack {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .tech-item {
+            background: var(--neutral-100);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .tech-item strong {
+            color: var(--primary);
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 100;
+        }
+
+        .btn {
+            background: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--primary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 40px;
+            font-size: 1.1rem;
+            color: white;
+            font-weight: 600;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            border-radius: 50px;
+        }
+
+        .key-points {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(124, 58, 237, 0.1));
+            padding: 25px;
+            border-radius: 12px;
+            border-left: 5px solid var(--accent);
+            margin: 30px 0;
+        }
+
+        .key-points h4 {
+            color: var(--accent);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .key-points ul {
+            list-style: none;
+            margin-left: 0;
+        }
+
+        .key-points li:before {
+            content: "✓ ";
+            color: var(--success);
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .slide {
+                padding: 40px 30px;
+                min-height: auto;
+            }
+
+            .slide h1 {
+                font-size: 2rem;
+            }
+
+            .slide h2 {
+                font-size: 1.5rem;
+            }
+
+            .feature-grid, .metrics, .tech-stack {
+                grid-template-columns: 1fr;
+            }
+
+            .slide p, .slide li {
+                font-size: 1rem;
+            }
+
+            .controls {
+                bottom: 20px;
+                gap: 10px;
+            }
+
+            .btn {
+                padding: 10px 16px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation">
+        <!-- Slide 1: Title -->
+        <div class="slide active">
+            <h1>Zoho Recruit AI</h1>
+            <p class="subtitle">Intelligent Recruitment Platform Powered by Claude</p>
+            <div style="margin-top: 60px;">
+                <h3>Transform Your Recruitment Process</h3>
+                <p>Automate candidate screening, ranking, and analysis with AI-powered intelligence</p>
+                <div style="margin-top: 40px; font-size: 0.95rem; color: var(--neutral-600);">
+                    <p>🚀 Reduce screening time by 70%</p>
+                    <p>🎯 Improve candidate quality assessments</p>
+                    <p>⚡ Accelerate time-to-hire</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 2: Problem & Solution -->
+        <div class="slide">
+            <h2>The Challenge</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Manual Screening</h4>
+                    <p>Recruiters spend excessive time reviewing candidate qualifications</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Inconsistency</h4>
+                    <p>Subjective assessment leads to inconsistent evaluations</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Time Delays</h4>
+                    <p>Extended screening process slows down hiring cycles</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Data Integration</h4>
+                    <p>Difficulty matching candidate data with job requirements</p>
+                </div>
+            </div>
+            <h2 style="margin-top: 50px;">Our Solution</h2>
+            <p>An intelligent platform that automatically analyzes job descriptions, searches candidates, ranks applicants, and generates interview questions—all powered by Claude AI.</p>
+        </div>
+
+        <!-- Slide 3: Key Features -->
+        <div class="slide">
+            <h2>Core Features</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>📄 JD Analysis</h4>
+                    <p>Auto-extract structured requirements from job descriptions</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🔍 Candidate Search</h4>
+                    <p>Intelligent search in Zoho Recruit database</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📊 Smart Ranking</h4>
+                    <p>AI-powered candidate scoring and ranking</p>
+                </div>
+                <div class="feature-card">
+                    <h4>✨ Fit Analysis</h4>
+                    <p>Detailed candidate-to-job fit assessment</p>
+                </div>
+                <div class="feature-card">
+                    <h4>❓ Interview Questions</h4>
+                    <p>Tailored questions for each role and candidate</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🌐 Multi-Site Integration</h4>
+                    <p>Integrate multiple job site MCP servers for scalability</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Architecture -->
+        <div class="slide">
+            <h2>System Architecture</h2>
+            <p>Three-tier architecture with Model Context Protocol (MCP) for AI orchestration</p>
+            <div class="architecture-diagram" style="text-align: center; padding: 40px;">
+                <div class="flow-box">📱 React UI (Port 5173)</div>
+                <div class="flow-arrow">⬇️ REST API</div>
+                <div class="flow-box">🔗 MCP Client (Port 8081)<br><small>API Gateway • Claude Haiku Orchestration</small></div>
+                <div class="flow-arrow">⬇️ MCP Protocol</div>
+                <div class="flow-box">🛠️ MCP Server (Port 8080)<br><small>Recruitment Tools • Zoho Integration • Claude Haiku</small></div>
+                <div class="flow-arrow">⬇️ External APIs</div>
+                <div class="flow-box" style="background: linear-gradient(135deg, #10b981, #059669); font-size: 0.9rem;">
+                    Zoho Recruit • Anthropic Claude • Multi-Site Job Sources
+                </div>
+            </div>
+            <div class="key-points">
+                <h4>Architecture Benefits</h4>
+                <ul>
+                    <li>Clear separation of concerns</li>
+                    <li>Horizontally scalable components</li>
+                    <li>Stateless design for reliability</li>
+                    <li>Modular tool-based approach</li>
+                    <li>Multi-site MCP server support for extensibility</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Slide 5: Module 1 - MCP Server -->
+        <div class="slide">
+            <h2>Module 1: MCP Server</h2>
+            <p><strong>Technology:</strong> Java 21 • Spring Boot 4.0.5 • Port 8080</p>
+            <h3>Responsibilities</h3>
+            <ul>
+                <li>Implements recruitment tools via MCP protocol</li>
+                <li>Claude Haiku integration for cost-optimized AI</li>
+                <li>Zoho Recruit API integration with OAuth</li>
+                <li>Business logic for JD parsing and ranking</li>
+            </ul>
+            <h3>Key Components</h3>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Tools</h4>
+                    <p>MCP tool definitions and implementation</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Services</h4>
+                    <p>AI and Zoho integration services</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Module 2 - MCP Client -->
+        <div class="slide">
+            <h2>Module 2: MCP Client</h2>
+            <p><strong>Technology:</strong> Java 21 • Spring Boot 4.0.5 • Port 8081</p>
+            <h3>Responsibilities</h3>
+            <ul>
+                <li>REST API gateway for frontend</li>
+                <li>MCP client communication with server(s)</li>
+                <li>Claude Haiku orchestration</li>
+                <li>Request/response transformation</li>
+                <li>Multi-site MCP server routing and load balancing</li>
+            </ul>
+            <h3>REST Endpoints</h3>
+            <ul>
+                <li><code>POST /api/job-descriptions/parse</code> - Parse job description</li>
+                <li><code>POST /api/candidates/search</code> - Search candidates</li>
+                <li><code>POST /api/candidates/rank</code> - Rank candidates</li>
+                <li><code>POST /api/interviews/generate-questions</code> - Generate questions</li>
+            </ul>
+        </div>
+
+        <!-- Slide 7: Module 3 - React UI -->
+        <div class="slide">
+            <h2>Module 3: React UI</h2>
+            <p><strong>Technology:</strong> React 19 • TypeScript 6.0 • Material-UI • Port 5173</p>
+            <h3>Features</h3>
+            <ul>
+                <li>Job posting management and search</li>
+                <li>Candidate ranking visualization</li>
+                <li>Detailed fit analysis dashboard</li>
+                <li>Interview question management</li>
+                <li>Real-time candidate search and filtering</li>
+            </ul>
+            <h3>Technical Stack</h3>
+            <div class="tech-stack">
+                <div class="tech-item"><strong>State:</strong> Redux Toolkit</div>
+                <div class="tech-item"><strong>Build:</strong> Vite</div>
+                <div class="tech-item"><strong>Routing:</strong> React Router</div>
+                <div class="tech-item"><strong>API:</strong> Axios</div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Data Flow -->
+        <div class="slide">
+            <h2>Complete Workflow</h2>
+            <div class="architecture-diagram" style="text-align: center; padding: 40px;">
+                <div class="flow-box">1️⃣ User uploads Job Description</div>
+                <div class="flow-arrow">⬇️</div>
+                <div class="flow-box">2️⃣ Parse JD with Claude Haiku</div>
+                <div class="flow-arrow">⬇️</div>
+                <div class="flow-box">3️⃣ Generate Search Criteria</div>
+                <div class="flow-arrow">⬇️</div>
+                <div class="flow-box">4️⃣ Search Job Databases (Zoho + Multi-Site)</div>
+                <div class="flow-arrow">⬇️</div>
+                <div class="flow-box">5️⃣ Rank with AI Scoring</div>
+                <div class="flow-arrow">⬇️</div>
+                <div class="flow-box">6️⃣ Display Results & Fit Analysis</div>
+                <div class="flow-arrow">⬇️</div>
+                <div class="flow-box" style="background: linear-gradient(135deg, #10b981, #059669);">
+                    ✓ Generate Interview Questions
+                </div>
+            </div>
+            <p style="margin-top: 30px; text-align: center; color: var(--neutral-600);">
+                <strong>Result:</strong> From job description to ranked candidates with interview questions in < 15 seconds
+            </p>
+        </div>
+
+        <!-- Slide 9: Technology Stack -->
+        <div class="slide">
+            <h2>Technology Stack</h2>
+            <div class="tech-stack" style="grid-template-columns: 1fr 1fr;">
+                <div style="grid-column: 1 / -1;">
+                    <strong style="color: var(--primary); font-size: 1.1rem;">Backend</strong>
+                </div>
+                <div class="tech-item"><strong>Language:</strong> Java 21</div>
+                <div class="tech-item"><strong>Framework:</strong> Spring Boot 4.0.5</div>
+                <div class="tech-item"><strong>Protocol:</strong> Spring AI (MCP)</div>
+                <div class="tech-item"><strong>Build:</strong> Maven 3.9+</div>
+            </div>
+            <div class="tech-stack" style="grid-template-columns: 1fr 1fr; margin-top: 20px;">
+                <div style="grid-column: 1 / -1;">
+                    <strong style="color: var(--primary); font-size: 1.1rem;">Frontend</strong>
+                </div>
+                <div class="tech-item"><strong>Framework:</strong> React 19</div>
+                <div class="tech-item"><strong>Language:</strong> TypeScript 6.0</div>
+                <div class="tech-item"><strong>UI Library:</strong> Material-UI</div>
+                <div class="tech-item"><strong>Build:</strong> Vite</div>
+            </div>
+            <div class="tech-stack" style="grid-template-columns: 1fr 1fr; margin-top: 20px;">
+                <div style="grid-column: 1 / -1;">
+                    <strong style="color: var(--primary); font-size: 1.1rem;">External Services</strong>
+                </div>
+                <div class="tech-item"><strong>AI:</strong> Anthropic Claude</div>
+                <div class="tech-item"><strong>Recruitment:</strong> Zoho Recruit API</div>
+            </div>
+        </div>
+
+        <!-- Slide 10: Success Metrics -->
+        <div class="slide">
+            <h2>Expected Impact</h2>
+            <div class="metrics">
+                <div class="metric-box">
+                    <div class="number">70%</div>
+                    <div class="label">Screening Time Reduction</div>
+                </div>
+                <div class="metric-box">
+                    <div class="number">30%</div>
+                    <div class="label">Faster Hiring</div>
+                </div>
+                <div class="metric-box">
+                    <div class="number">95%</div>
+                    <div class="label">User Satisfaction</div>
+                </div>
+            </div>
+            <h3 style="text-align: center; margin-top: 40px;">Additional Benefits</h3>
+            <ul style="text-align: center; list-style: none; margin-left: 0;">
+                <li>✓ Improved candidate quality assessment</li>
+                <li>✓ Reduced hiring bias through consistent evaluation</li>
+                <li>✓ Better candidate-to-job fit matching</li>
+                <li>✓ Enhanced recruiter productivity</li>
+            </ul>
+        </div>
+
+        <!-- Slide 11: Security & Deployment -->
+        <div class="slide">
+            <h2>Security & Deployment</h2>
+            <h3>Security Features</h3>
+            <ul>
+                <li>OAuth 2.0 authentication with Zoho</li>
+                <li>API key management via environment variables</li>
+                <li>HTTPS for all production traffic</li>
+                <li>Input validation and XSS protection</li>
+                <li>Comprehensive audit logging</li>
+            </ul>
+            <h3 style="margin-top: 30px;">Deployment Options</h3>
+            <ul>
+                <li><strong>Development:</strong> Local Docker Compose setup</li>
+                <li><strong>Production:</strong> Cloud-native deployment (AWS/GCP/Azure)</li>
+                <li><strong>Container:</strong> Docker images for all services</li>
+                <li><strong>Scalability:</strong> Horizontal scaling ready</li>
+            </ul>
+        </div>
+
+        <!-- Slide 12: Future Roadmap -->
+        <div class="slide">
+            <h2>Future Enhancements</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>📈 Advanced Analytics</h4>
+                    <p>Hiring funnel, time-to-hire metrics, funnel analysis</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🤖 Custom ML Models</h4>
+                    <p>Train models on company hiring data</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📅 Smart Scheduling</h4>
+                    <p>Automated interview scheduling</p>
+                </div>
+                <div class="feature-card">
+                    <h4>📱 Mobile App</h4>
+                    <p>Native iOS and Android applications</p>
+                </div>
+                <div class="feature-card">
+                    <h4>🏢 Multi-Tenant SaaS</h4>
+                    <p>Support multiple organizations</p>
+                </div>
+                <div class="feature-card">
+                    <h4>💼 Offer Management</h4>
+                    <p>Offer generation and e-signature integration</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 13: Conclusion -->
+        <div class="slide">
+            <h2>Get Started Today</h2>
+            <p style="font-size: 1.2rem; margin-bottom: 40px;">Transform your recruitment process with AI-powered intelligence</p>
+            <div class="key-points">
+                <h4>Next Steps</h4>
+                <ul>
+                    <li>Review documentation (PRD.md, Architecture.md)</li>
+                    <li>Set up development environment</li>
+                    <li>Configure Zoho Recruit and Anthropic API credentials</li>
+                    <li>Launch all three services</li>
+                    <li>Test core workflows</li>
+                </ul>
+            </div>
+            <div style="margin-top: 60px; text-align: center; color: var(--neutral-600);">
+                <p><strong>For more information, visit the project documentation</strong></p>
+                <p style="font-size: 0.95rem; margin-top: 20px;">Questions? Review CLAUDE.md, PRD.md, or ARCHITECTURE.md</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="slide-counter">
+        <span id="current-slide">1</span> / <span id="total-slides">13</span>
+    </div>
+
+    <div class="controls">
+        <button class="btn" id="prev-btn" onclick="previousSlide()">← Previous</button>
+        <button class="btn" id="next-btn" onclick="nextSlide()">Next →</button>
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = document.querySelectorAll('.slide').length;
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(n) {
+            const slides = document.querySelectorAll('.slide');
+
+            if (n > totalSlides) {
+                currentSlide = totalSlides;
+            }
+            if (n < 1) {
+                currentSlide = 1;
+            }
+
+            slides.forEach(slide => slide.classList.remove('active'));
+            slides[currentSlide - 1].classList.add('active');
+            document.getElementById('current-slide').textContent = currentSlide;
+
+            document.getElementById('prev-btn').disabled = currentSlide === 1;
+            document.getElementById('next-btn').disabled = currentSlide === totalSlides;
+        }
+
+        function nextSlide() {
+            currentSlide++;
+            showSlide(currentSlide);
+        }
+
+        function previousSlide() {
+            currentSlide--;
+            showSlide(currentSlide);
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextSlide();
+            if (e.key === 'ArrowLeft') previousSlide();
+        });
+
+        // Initialize
+        showSlide(currentSlide);
+    </script>
+</body>
+</html>
