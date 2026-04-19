@@ -7,7 +7,6 @@ WORKDIR /build
 COPY . .
 
 # Build both modules
-# Build both modules
 RUN cd mcp-server-demo && mvn clean package -DskipTests && \
     cd ../mcp-client-demo && mvn clean package -DskipTests
 
@@ -25,12 +24,18 @@ RUN cat > /app/start.sh << 'EOF'
 #!/bin/sh
 set -e
 
-echo "Starting MCP Server..."
+# Default PORT for local dev; Render injects this at runtime
+PORT=${PORT:-8081}
+
+echo "Starting MCP Server on port 8080..."
 java -jar app-server.jar &
 SERVER_PID=$!
 
-echo "Starting MCP Client..."
-java -jar app-client.jar &
+# Give the server a moment to start before the client connects
+sleep 5
+
+echo "Starting MCP Client on port $PORT..."
+java -jar app-client.jar --server.port=$PORT &
 CLIENT_PID=$!
 
 # Wait for both processes
@@ -42,8 +47,8 @@ RUN chmod +x /app/start.sh
 # Expose both ports
 EXPOSE 8080 8081
 
-# Health check (optional, but recommended for Render)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+# Health check — targets the Client (public-facing service)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-8081}/health || exit 1
 
 CMD ["/app/start.sh"]
