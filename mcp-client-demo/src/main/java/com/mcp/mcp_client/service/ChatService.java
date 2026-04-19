@@ -1,5 +1,7 @@
 package com.mcp.mcp_client.service;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mcp.mcp_client.dto.ChatRequest;
@@ -9,7 +11,6 @@ import com.mcp.mcp_client.dto.RankedCandidate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -22,9 +23,20 @@ import java.util.regex.Pattern;
 public class ChatService {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatService.class);
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper;
     private static final Pattern JSON_CODE_BLOCK_PATTERN = Pattern.compile("```json\\s*\\n([\\s\\S]*?)\\n```");
+    private static final Pattern JSON_ARRAY_PATTERN = Pattern.compile("(\\[\\s*\\{[\\s\\S]*\\}\\s*\\])");
     private static final Pattern XML_CODE_BLOCK_PATTERN = Pattern.compile("```xml\\s*\\n([\\s\\S]*?)\\n```");
+
+    static {
+        objectMapper = new ObjectMapper();
+        // Be lenient with AI-generated JSON
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+        objectMapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
+        objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+        objectMapper.configure(JsonParser.Feature.ALLOW_TRAILING_COMMA, true);
+    }
 
     private final ChatClient chatClient;
 
@@ -42,27 +54,39 @@ public class ChatService {
         logger.info("Processing chat message: {}", chatRequest.getMessage());
 
         try {
-            List<RankedCandidate> response = chatClient.prompt()
+            // Get the raw text response from Claude instead of using .entity()
+            // The .entity() approach fails when Claude produces JSON with unescaped special chars
+            String rawResponse = chatClient.prompt()
                     .system("You are a helpful AI assistant with access to MCP (Model Context Protocol) tools. " +
-                            "Use the available tools when needed to answer the user's questions accurately.")
+                            "Use the available tools when needed to answer the user's questions accurately. " +
+                            "IMPORTANT: When returning candidate data as JSON, ensure all string values are " +
+                            "properly escaped. Do NOT use unescaped quotes, newlines, or special characters " +
+                            "inside JSON string values. Keep matchReasoning and fitAnalysis concise (under 300 chars).")
                     .user(chatRequest.getMessage())
                     .call()
-                    .entity(new ParameterizedTypeReference<>() {
-                    });
+                    .content();
 
-            logger.info("Claude response received successfully");
+            logger.info("Claude raw response received, length: {}", rawResponse != null ? rawResponse.length() : 0);
+            logger.debug("Raw response: {}", rawResponse);
 
             // Extract JSON data from response and convert to RankedCandidate list
-            List<RankedCandidate> candidates = extractCandidatesFromResponse(response);
+            List<RankedCandidate> candidates = extractCandidatesFromResponse(rawResponse);
 
-            // Set page size: use the smaller of request page size or total candidates count
-            // This ensures we get meaningful pagination based on actual data
+            if (candidates.isEmpty()) {
+                logger.warn("No candidates could be extracted from response");
+                return ChatResponse.builder()
+                        .response(rawResponse)
+                        .timestamp(System.currentTimeMillis())
+                        .build();
+            }
+
+            // Set page size
             int requestPageSize = chatRequest.getPageSize() > 0 ? chatRequest.getPageSize() : 10;
-            int pageSize = Math.min(requestPageSize, Math.max(candidates.size() / 5, 5)); // Min 5 items per page
+            int pageSize;
             if (candidates.size() <= requestPageSize) {
-                pageSize = candidates.size(); // If total is less than requested, use total
+                pageSize = candidates.size();
             } else {
-                pageSize = requestPageSize; // Use requested page size
+                pageSize = requestPageSize;
             }
 
             logger.info("Setting page size to {} for {} total candidates", pageSize, candidates.size());
