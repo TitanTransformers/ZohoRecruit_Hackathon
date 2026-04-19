@@ -6,9 +6,8 @@ WORKDIR /build
 # Copy all source code
 COPY . .
 
-# Build both modules
-RUN mvn clean package -DskipTests \
-    -pl mcp-server-demo,mcp-client-demo
+RUN cd mcp-server-demo && mvn clean package -DskipTests && \
+    cd ../mcp-client-demo && mvn clean package -DskipTests
 
 # Runtime stage
 FROM eclipse-temurin:21-jre-alpine
