@@ -29,23 +29,17 @@ public class ChatController {
 
     /**
      * Chat endpoint to send message to Claude and get response with MCP tool usage
-     *
-     * @param chatRequest The user's chat message request
-     * @return ChatResponse with Claude's response and tools used, or DataResponse for structured data
+     * Optimized for performance - minimal logging
      */
     @PostMapping({"/send", "/query"})
     public ChatResponse sendMessage(@RequestBody ChatRequest chatRequest) {
-        logger.info("Received chat request: {}", chatRequest);
-
-        // Validate request
+        // Fast path validation
         if (chatRequest == null || chatRequest.getMessage() == null || chatRequest.getMessage().isEmpty()) {
-            logger.warn("Invalid chat request received");
             return ChatResponse.builder().response("Error: Message cannot be empty").build();
         }
 
         try {
             Object response = chatService.chat(chatRequest);
-            logger.info("Chat response prepared successfully");
 
             // If response is already a PaginatedResponse, wrap it
             if (response instanceof com.mcp.mcp_client.dto.PaginatedResponse) {
@@ -56,8 +50,8 @@ public class ChatController {
 
             return ChatResponse.builder().response(response).build();
         } catch (Exception e) {
-            logger.error("Error processing chat request", e);
-            return ChatResponse.builder().response(String.format("Error processing your request: %s", e.getMessage())).build();
+            logger.error("Chat error: {}", e.getMessage());
+            return ChatResponse.builder().response("Error: " + e.getMessage()).build();
         }
     }
 
@@ -66,8 +60,7 @@ public class ChatController {
      */
     @GetMapping("/health")
     public ResponseEntity<String> health() {
-        logger.info("Health check requested");
-        return ResponseEntity.ok("Chat service is running");
+        return ResponseEntity.ok("OK");
     }
 
     /**
@@ -75,7 +68,6 @@ public class ChatController {
      */
     @GetMapping("/tools")
     public ResponseEntity<List<Map<String, String>>> getAvailableTools() {
-        logger.info("Available tools requested");
         return ResponseEntity.ok(mcpToolService.getAvailableTools());
     }
 }

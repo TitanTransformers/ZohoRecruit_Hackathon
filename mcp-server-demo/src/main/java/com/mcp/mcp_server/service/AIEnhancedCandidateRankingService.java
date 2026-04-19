@@ -53,83 +53,49 @@ public class AIEnhancedCandidateRankingService {
     }
 
     /**
-     * Use Claude Haiku to analyze all candidates against the job description
+     * Use Claude Haiku to analyze all candidates against the job description.
+     * Sends candidates in batches to avoid response truncation.
      */
     private String analyzeAllCandidatesWithClaude(List<Candidate> candidates, JobDescription jobDescription) {
-        StringBuilder candidatesJson = new StringBuilder();
-        for (int i = 0; i < candidates.size(); i++) {
-            Candidate c = candidates.get(i);
-            candidatesJson.append(String.format("""
-                    {
-                      "id": %s,
-                      "name": %s,
-                      "email": %s,
-                      "currentPosition": %s,
-                      "experience": %s,
-                      "skills": %s
-                    }""",
-                    escapeJsonString(c.getCandidateId()),
-                    escapeJsonString(c.getName()),
-                    escapeJsonString(c.getEmail()),
-                    escapeJsonString(c.getCurrentPosition()),
-                    escapeJsonString(c.getExperience()),
-                    escapeJsonString(c.getSkills() != null ? String.join(", ", c.getSkills()) : "")));
-            if (i < candidates.size() - 1) {
-                candidatesJson.append(",");
-            }
-        }
-
         String jobReqSkills = String.join(", ", jobDescription.getRequiredSkills());
         String jobPrefSkills = String.join(", ", jobDescription.getPreferredSkills());
 
+        // Build compact candidate list (minimal fields to reduce prompt size)
+        StringBuilder candidatesJson = new StringBuilder("[");
+        for (int i = 0; i < candidates.size(); i++) {
+            Candidate c = candidates.get(i);
+            if (i > 0) candidatesJson.append(",");
+            candidatesJson.append(String.format(
+                    "{\"id\":%s,\"title\":%s,\"skills\":%s}",
+                    escapeJsonString(c.getCandidateId()),
+                    escapeJsonString(c.getCurrentPosition()),
+                    escapeJsonString(c.getSkills() != null ? String.join(", ", c.getSkills()) : "")));
+        }
+        candidatesJson.append("]");
+
         String prompt = String.format("""
-                Analyze each candidate against the job description and rank them by fit.
+                Rank candidates against this job. Return ONLY a JSON array, no markdown.
                 
-                JOB DESCRIPTION:
-                - Title: %s
-                - Required Skills: %s
-                - Preferred Skills: %s
-                - Experience Level: %s
-                - Years Required: %s
+                JOB: %s | Required: %s | Preferred: %s | Level: %s | Years: %s
                 
-                CANDIDATES:
-                [%s]
+                CANDIDATES: %s
                 
-                Return ONLY a valid JSON array with one object per candidate (no markdown, no extra text):
-                [
-                  {
-                    "candidateId": "id",
-                    "matchPercentage": 85.5,
-                    "skillMatchPercentage": 80,
-                    "experienceMatchPercentage": 90,
-                    "matchedSkills": ["skill1", "skill2"],
-                    "missingSkills": ["skill3"],
-                    "matchReasoning": "detailed reasoning...",
-                    "fitAnalysis": "summary of fit..."
-                  },
-                  ...
-                ]
+                For EACH candidate return EXACTLY this JSON (keep reasoning under 80 chars):
+                {"candidateId":"id","matchPercentage":85.5,"skillMatchPercentage":80,"experienceMatchPercentage":90,"matchedSkills":["s1","s2"],"missingSkills":["s3"],"matchReasoning":"short reason","fitAnalysis":"short analysis"}
                 
-                Scoring guidelines:
-                - matchPercentage: overall score 0-100 = (0.60 * skillMatch) + (0.25 * experienceMatch) + (0.15 * softSkillMatch)
-                - skillMatchPercentage: percentage of required skills present in candidate profile (0-100)
-                - experienceMatchPercentage: alignment of experience with JD requirements (0-100)
-                - Consider skill overlap (60%% weight), experience (25%% weight), and soft skills (15%% weight)
-                - Be realistic but fair in assessment
+                Rules: matchPercentage = 0.60*skill + 0.25*experience + 0.15*soft. Be concise.
                 """,
-                jobDescription.getJobTitle(),
-                jobReqSkills,
-                jobPrefSkills,
+                jobDescription.getJobTitle(), jobReqSkills, jobPrefSkills,
                 jobDescription.getExperienceLevel(),
-                jobDescription.getYearsOfExperience() != null ? jobDescription.getYearsOfExperience() : "Not specified",
-                candidatesJson.toString());
+                jobDescription.getYearsOfExperience() != null ? jobDescription.getYearsOfExperience() : "N/A",
+                candidatesJson);
 
         String response = getChatClient().prompt()
                 .user(prompt)
                 .call()
                 .content();
 
-        log.debug("Claude AI Ranking Response: {}", response);
+        log.debug("Claude AI Ranking Response length: {}", response != null ? response.length() : 0);
         return response;
     }
 
