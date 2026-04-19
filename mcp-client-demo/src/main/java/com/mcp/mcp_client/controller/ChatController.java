@@ -46,6 +46,14 @@ public class ChatController {
         try {
             Object response = chatService.chat(chatRequest);
             logger.info("Chat response prepared successfully");
+
+            // If response is already a PaginatedResponse, wrap it
+            if (response instanceof com.mcp.mcp_client.dto.PaginatedResponse) {
+                return ChatResponse.builder()
+                        .pagination((com.mcp.mcp_client.dto.PaginatedResponse) response)
+                        .build();
+            }
+
             return ChatResponse.builder().response(response).build();
         } catch (Exception e) {
             logger.error("Error processing chat request", e);

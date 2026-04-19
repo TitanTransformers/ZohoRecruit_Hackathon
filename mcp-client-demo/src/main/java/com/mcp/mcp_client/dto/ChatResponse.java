@@ -7,11 +7,16 @@ import java.util.List;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ChatResponse {
     
     @JsonProperty("response")
     private Object response;
     
+    @JsonProperty("pagination")
+    private PaginatedResponse pagination;
+
     @JsonProperty("tools_used")
     private List<String> toolsUsed;
     
