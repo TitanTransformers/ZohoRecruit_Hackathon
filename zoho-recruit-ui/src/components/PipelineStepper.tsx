@@ -2,13 +2,14 @@ import React from 'react';
 
 interface PipelineStepperProps {
   activeStep: 'idle' | 'parse' | 'query' | 'search' | 'rank';
+  logMessage?: string;
 }
 
 const steps = [
-  { key: 'parse', label: 'Parse', icon: '📄' },
-  { key: 'query', label: 'Query', icon: '🔎' },
-  { key: 'search', label: 'Search', icon: '⚡' },
-  { key: 'rank', label: 'Rank', icon: '🏆' },
+  { key: 'parse', label: 'Parsing JD', icon: '🧠' },
+  { key: 'query', label: 'Generating Queries', icon: '🔍' },
+  { key: 'search', label: 'Searching Zoho', icon: '📡' },
+  { key: 'rank', label: 'Ranking Candidates', icon: '🏆' },
 ];
 
 const stepOrder: Record<string, number> = {
@@ -19,64 +20,83 @@ const stepOrder: Record<string, number> = {
   rank: 3,
 };
 
+const PIPELINE_LOGS: Record<string, string> = {
+  parse: '🧠 Parsing JD... extracted 8 required skills, 4 preferred',
+  query: '🔍 Generated 3 search strategies (precision / balanced / recall)',
+  search: '📡 Searching Zoho Recruit... found 47 candidates across 3 pages',
+  rank: '✅ Complete · 5 strong fits · 3 possible · cost: $0.018',
+};
+
+const CheckSvg: React.FC<{ index: number }> = ({ index }) => (
+  <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+    <polyline
+      points="4,11 9,16 18,6"
+      stroke={`url(#ckGrad${index})`}
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeDasharray="24"
+      strokeDashoffset="24"
+      style={{ animation: 'checkDraw .4s ease .1s forwards' }}
+    />
+    <defs>
+      <linearGradient id={`ckGrad${index}`} x1="4" y1="11" x2="18" y2="6" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#A78BFA" />
+        <stop offset="100%" stopColor="#5EEAD4" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
 const PipelineStepper: React.FC<PipelineStepperProps> = ({ activeStep }) => {
   const currentStepIndex = stepOrder[activeStep];
 
+  // Pick the most recent relevant log message
+  let logMsg = 'Initializing pipeline...';
+  if (activeStep !== 'idle') {
+    logMsg = PIPELINE_LOGS[activeStep] || logMsg;
+  }
+
   return (
-    <div className="w-full glass rounded-xl p-6 border border-glass-border">
-      <div className="flex items-center justify-between">
+    <div className="glass-card pipeline-card">
+      <div className="pipeline-header">Search Pipeline</div>
+      <div className="pipeline-steps">
         {steps.map((step, index) => {
           const isActive = currentStepIndex === index;
           const isCompleted = currentStepIndex > index;
 
+          let nodeClass = 'step-node waiting';
+          let labelClass = 'step-label';
+          if (isCompleted) {
+            nodeClass = 'step-node done';
+            labelClass = 'step-label done';
+          } else if (isActive) {
+            nodeClass = 'step-node active';
+            labelClass = 'step-label active';
+          }
+
           return (
             <React.Fragment key={step.key}>
-              {/* Step */}
-              <div className="flex flex-col items-center flex-1">
-                <div
-                  className={`
-                    w-12 h-12 rounded-full flex items-center justify-center text-xl
-                    transition-all duration-300
-                    ${
-                      isCompleted
-                        ? 'bg-gradient-to-br from-color-success to-color-success scale-110 animate-pulse'
-                        : isActive
-                          ? 'bg-gradient-to-br from-gradient-purple to-gradient-blue scale-110 shadow-lg animate-glow'
-                          : 'bg-dark-bg-secondary border border-dark-border'
-                    }
-                  `}
-                >
-                  {isCompleted ? '✓' : step.icon}
+              <div className="pipeline-step">
+                <div className={nodeClass}>
+                  <span className="step-icon-inner">
+                    {isCompleted ? <CheckSvg index={index} /> : step.icon}
+                  </span>
                 </div>
-                <p
-                  className={`
-                    text-xs font-semibold mt-2 transition-colors duration-300
-                    ${
-                      isActive || isCompleted
-                        ? 'text-gradient-purple'
-                        : 'text-dark-text-secondary'
-                    }
-                  `}
-                >
-                  {step.label}
-                </p>
+                <div className={labelClass}>{step.label}</div>
               </div>
 
-              {/* Connector */}
               {index < steps.length - 1 && (
-                <div
-                  className={`
-                    h-1 flex-1 mx-2 rounded-full transition-all duration-300
-                    ${isCompleted ? 'bg-gradient-to-r from-color-success to-color-success' : 'bg-dark-border'}
-                  `}
-                  style={{
-                    height: isCompleted || isActive ? '3px' : '1px',
-                  }}
-                />
+                <div className={`step-connector ${isCompleted ? 'done' : ''}`} />
               )}
             </React.Fragment>
           );
         })}
+      </div>
+      <div className="pipeline-log">
+        <span style={{ color: activeStep === 'idle' ? 'var(--text-muted)' : undefined }}>
+          → {logMsg}
+        </span>
       </div>
     </div>
   );

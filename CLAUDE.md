@@ -131,29 +131,17 @@ Claude prompts are embedded in:
 
 ## Important Notes
 
-### Sensitive Data
-- API keys are in `application.yaml` but should be overridden via environment variables in production
-- Never commit real Anthropic or Zoho credentials to version control
-
 ### Spring AI Version
-Both modules use Spring AI 2.0.0-M4 with MCP support. Ensure compatibility when updating dependencies.
+Both modules use Spring AI 2.0.0-M4 with MCP support. This milestone version has breaking API differences from GA releases — verify compatibility when updating dependencies.
 
-### Port Configuration
-- MCP Server: 8080 (configured in `application.yaml`)
-- MCP Client: 8081 (configured in `application.yaml`)
-- React UI: 5173 (dev), served via MCP Client in production
+### MCP Transport
+Uses **Streamable HTTP** transport (not legacy SSE). Configured via `spring.ai.mcp.server.protocol: streamable` in `application.yaml`.
 
-### Testing
-Tests are located in `mcp-server-demo/src/test/`. Focus on:
-- Criteria validation (`ZohoCriteriaBuilderTest.java`)
-- API format verification (`VerifyCriteriaFormatTest.java`)
-- Integration tests for service layer
+### Zoho OAuth
+`ZohoRecruitOAuthService` automatically refreshes tokens on 401. The OAuth endpoint and API base URL point to an Azure-hosted Zoho instance (`zohorecruit.thankfulrock-f57331b9.centralindia.azurecontainerapps.io`).
 
-### React UI Structure
-- Uses Material-UI (MUI) for components
-- Redux Toolkit for state management
-- React Router for navigation
-- Built with Vite for fast development
+### ZohoCriteriaBuilder
+Field names are validated against the `ZohoRecruitCandidateSearchField` enum before query string construction. Add new searchable Zoho fields to that enum first.
 
 ## File Organization
 
@@ -188,8 +176,5 @@ src/
 
 ## Development Notes
 
-- The project uses Java 21 for both Spring Boot modules
-- Spring Boot version 4.0.5 (latest stable)
-- React 19.2.4 with TypeScript 6.0.2
-- All three modules should be running for full functionality
+- All three modules must be running for full functionality
 - Health check endpoint: `GET http://localhost:8080/health` (server only)
