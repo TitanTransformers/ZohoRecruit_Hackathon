@@ -16,10 +16,11 @@ spring:
     anthropic:
       api-key: ${ANTHROPIC_API_KEY}
       model:
-        name: ${LLM_MODEL:claude-3-5-haiku-20241022}  # Claude Haiku model for fast processing
+        name: claude-3-5-haiku-20241022 # Claude Haiku model for fast processing
       chat:
         options:
           max-tokens: 8192  # Ensure full response for large candidate lists
+          temperature: 0.2  # Low temperature for deterministic, structured JSON output
 
   main:
     banner-mode: "off"   # Disable Spring Boot startup banner

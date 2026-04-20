@@ -12,6 +12,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 /**
@@ -31,13 +32,22 @@ public class AIEnhancedCandidateRankingService {
     }
 
     /**
-     * Rank candidates using Claude Haiku AI for semantic analysis
+     * Batch size for ranking operations
+     */
+    private static final int RANKING_BATCH_SIZE = 10;
+
+    /**
+     * Rank candidates using Claude Haiku AI for semantic analysis.
+     * All candidates ranked in a single batch for consistent relative scoring.
+     *
+     * COST EFFECTIVE: ~$0.15-0.20 for 31 candidates
+     * Speed: ~23 seconds
      */
     public List<RankedCandidate> rankCandidatesWithAI(List<Candidate> candidates, JobDescription jobDescription) {
-        log.debug("Ranking {} candidates with Claude Haiku AI", candidates.size());
+        log.debug("Ranking {} candidates with Claude Haiku AI (single batch for consistency)", candidates.size());
 
         try {
-            // Use Claude to analyze all candidates against JD
+            // Use Claude to analyze all candidates against JD in one batch for relative consistency
             String aiAnalysis = analyzeAllCandidatesWithClaude(candidates, jobDescription);
             List<RankedCandidate> rankedCandidates = parseAIRankingResults(aiAnalysis, candidates);
 
@@ -53,6 +63,214 @@ public class AIEnhancedCandidateRankingService {
     }
 
     /**
+     * Rank candidates using Claude Haiku AI with parallel batch processing.
+     * Splits candidates into batches and ranks each batch in parallel.
+     *
+     * FASTER but LESS COST EFFECTIVE: ~$0.25-0.30 for 31 candidates
+     * Speed: ~8-10 seconds (parallel)
+     * Note: Ranking scores within each batch are consistent relative to that batch,
+     * but absolute scores may vary between batches.
+     *
+     * @param candidates List of candidates to rank
+     * @param jobDescription Job description context
+     * @return List of ranked candidates sorted by match percentage
+     */
+    public List<RankedCandidate> rankCandidatesWithAIBatching(List<Candidate> candidates, JobDescription jobDescription) {
+        log.debug("Ranking {} candidates with parallel batch processing (batch size: {})",
+                candidates.size(), RANKING_BATCH_SIZE);
+
+        if (candidates.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        int threadPoolSize = Math.min(4, (candidates.size() + RANKING_BATCH_SIZE - 1) / RANKING_BATCH_SIZE);
+        ExecutorService executorService = Executors.newFixedThreadPool(threadPoolSize);
+
+        try {
+            List<RankedCandidate> allRankedCandidates = Collections.synchronizedList(new ArrayList<>());
+
+            // Split into batches for parallel processing
+            int batches = (candidates.size() + RANKING_BATCH_SIZE - 1) / RANKING_BATCH_SIZE;
+            long startTime = System.currentTimeMillis();
+            List<Future<List<RankedCandidate>>> futures = new ArrayList<>();
+
+            log.info("Submitting {} batches for parallel ranking (batch size: {})", batches, RANKING_BATCH_SIZE);
+
+            for (int i = 0; i < batches; i++) {
+                final int batchIndex = i;
+                int start = i * RANKING_BATCH_SIZE;
+                int end = Math.min(start + RANKING_BATCH_SIZE, candidates.size());
+                List<Candidate> batch = candidates.subList(start, end);
+
+                // Submit batch ranking task to thread pool
+                Future<List<RankedCandidate>> future = executorService.submit(() -> {
+                    try {
+                        log.debug("Ranking batch {}/{}: {} candidates on thread {}",
+                                batchIndex + 1, batches, batch.size(), Thread.currentThread().getName());
+
+                        String aiAnalysis = analyzeAllCandidatesWithClaude(batch, jobDescription);
+                        List<RankedCandidate> batchResults = parseAIRankingResults(aiAnalysis, batch);
+
+                        log.debug("Batch {}/{} completed with {} results",
+                                batchIndex + 1, batches, batchResults.size());
+
+                        return batchResults;
+                    } catch (Exception e) {
+                        log.error("Error ranking batch {}: {}", batchIndex + 1, e.getMessage(), e);
+                        return Collections.emptyList();
+                    }
+                });
+
+                futures.add(future);
+            }
+
+            // Wait for all batch ranking tasks to complete and collect results
+            log.debug("Waiting for {} batch ranking tasks to complete...", futures.size());
+            for (int i = 0; i < futures.size(); i++) {
+                try {
+                    List<RankedCandidate> batchResults = futures.get(i).get(60, TimeUnit.SECONDS);
+                    allRankedCandidates.addAll(batchResults);
+
+                    long elapsedMs = System.currentTimeMillis() - startTime;
+                    log.debug("Batch {}/{} collected. Total elapsed: {}ms",
+                            i + 1, futures.size(), elapsedMs);
+                } catch (TimeoutException e) {
+                    log.error("Batch {} ranking timed out after 60 seconds", i + 1);
+                    futures.get(i).cancel(true);
+                } catch (Exception e) {
+                    log.error("Error collecting batch {} results: {}", i + 1, e.getMessage(), e);
+                }
+            }
+
+            // Sort all results by match percentage (highest first)
+            allRankedCandidates.sort(Comparator.comparingDouble(RankedCandidate::getMatchPercentage).reversed());
+
+            long totalTimeMs = System.currentTimeMillis() - startTime;
+            log.info("Parallel batch ranking completed: {} candidates in {}ms (avg: {}ms per candidate)",
+                    allRankedCandidates.size(), totalTimeMs,
+                    allRankedCandidates.isEmpty() ? 0 : totalTimeMs / allRankedCandidates.size());
+
+            if (!allRankedCandidates.isEmpty()) {
+                return allRankedCandidates;
+            }
+        } catch (Exception e) {
+            log.error("Parallel batch ranking failed", e);
+            throw new RuntimeException("Failed to rank candidates using parallel batching", e);
+        } finally {
+            executorService.shutdown();
+            try {
+                if (!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
+                    log.warn("Executor service did not terminate in time, forcing shutdown");
+                    executorService.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                log.warn("Interrupted while waiting for executor shutdown", e);
+                executorService.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        return new ArrayList<>();
+    }
+
+    /**
+     * Analyze candidates in parallel for detailed insights (fit analysis, interview questions, etc.)
+     * Uses thread pool to process multiple candidates concurrently.
+     *
+     * @param candidates List of candidates to analyze in parallel
+     * @param jobDescription Job description context for analysis
+     * @param analysisTask Lambda that performs the actual analysis on each candidate
+     * @return Map of candidateId -> analysis result
+     */
+    public Map<String, Map<String, Object>> analyzeMultipleCandidatesInParallel(
+            List<RankedCandidate> candidates,
+            JobDescription jobDescription,
+            CandidateAnalysisTask analysisTask) {
+
+        int threadPoolSize = Math.min(4, candidates.size());
+        ExecutorService executorService = Executors.newFixedThreadPool(threadPoolSize);
+        Map<String, Map<String, Object>> results = new ConcurrentHashMap<>();
+
+        try {
+            List<Future<Void>> futures = new ArrayList<>();
+            long startTime = System.currentTimeMillis();
+
+            log.info("Starting parallel candidate analysis for {} candidates (threads: {})",
+                    candidates.size(), threadPoolSize);
+
+            // Submit analysis task for each candidate
+            for (int i = 0; i < candidates.size(); i++) {
+                final int candidateIndex = i;
+                RankedCandidate candidate = candidates.get(i);
+
+                Future<Void> future = executorService.submit(() -> {
+                    try {
+                        log.debug("Analyzing candidate {}/{}: {} (ID: {}) on thread {}",
+                                candidateIndex + 1, candidates.size(), candidate.getName(),
+                                candidate.getCandidateId(), Thread.currentThread().getName());
+
+                        // Perform the actual analysis
+                        Map<String, Object> analysisResult = analysisTask.analyze(candidate, jobDescription);
+                        results.put(candidate.getCandidateId(), analysisResult);
+
+                        log.debug("Candidate {}/{} analysis completed", candidateIndex + 1, candidates.size());
+                        return null;
+                    } catch (Exception e) {
+                        log.error("Error analyzing candidate {}: {}", candidate.getCandidateId(), e.getMessage(), e);
+                        return null;
+                    }
+                });
+
+                futures.add(future);
+            }
+
+            // Wait for all analysis tasks to complete
+            log.debug("Waiting for {} candidate analysis tasks to complete...", futures.size());
+            for (int i = 0; i < futures.size(); i++) {
+                try {
+                    futures.get(i).get(120, TimeUnit.SECONDS);
+                } catch (TimeoutException e) {
+                    log.error("Candidate analysis task {} timed out after 120 seconds", i + 1);
+                    futures.get(i).cancel(true);
+                } catch (Exception e) {
+                    log.error("Error waiting for candidate analysis {}: {}", i + 1, e.getMessage(), e);
+                }
+            }
+
+            long totalTimeMs = System.currentTimeMillis() - startTime;
+            log.info("Parallel candidate analysis completed: {} candidates in {}ms (avg: {}ms per candidate)",
+                    results.size(), totalTimeMs,
+                    results.isEmpty() ? 0 : totalTimeMs / results.size());
+
+            return results;
+
+        } catch (Exception e) {
+            log.error("Parallel candidate analysis failed", e);
+            return new HashMap<>();
+        } finally {
+            executorService.shutdown();
+            try {
+                if (!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
+                    log.warn("Executor service did not terminate in time, forcing shutdown");
+                    executorService.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                log.warn("Interrupted while waiting for executor shutdown", e);
+                executorService.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    /**
+     * Functional interface for candidate analysis tasks
+     */
+    @FunctionalInterface
+    public interface CandidateAnalysisTask {
+        Map<String, Object> analyze(RankedCandidate candidate, JobDescription jobDescription) throws Exception;
+    }
+
+    /**
      * Use Claude Haiku to analyze all candidates against the job description.
      * Sends candidates in batches to avoid response truncation.
      */
@@ -60,23 +278,15 @@ public class AIEnhancedCandidateRankingService {
         String jobReqSkills = String.join(", ", jobDescription.getRequiredSkills());
         String jobPrefSkills = String.join(", ", jobDescription.getPreferredSkills());
 
-        // Build compact candidate list (minimal fields to reduce prompt size)
-        StringBuilder candidatesJson = new StringBuilder("[");
-        for (int i = 0; i < candidates.size(); i++) {
-            Candidate c = candidates.get(i);
-            if (i > 0) candidatesJson.append(",");
-            candidatesJson.append(String.format(
-                    "{\"id\":%s,\"title\":%s,\"skills\":%s}",
-                    escapeJsonString(c.getCandidateId()),
-                    escapeJsonString(c.getCurrentPosition()),
-                    escapeJsonString(c.getSkills() != null ? String.join(", ", c.getSkills()) : "")));
-        }
-        candidatesJson.append("]");
+        // Build compact candidate list using Candidate.toString()
+        String candidatesJson = "[" + candidates.stream()
+                .map(Candidate::toString)
+                .collect(Collectors.joining(",")) + "]";
 
         String prompt = String.format("""
                 Rank candidates against this job. Return ONLY a JSON array, no markdown.
                 
-                JOB: %s | Required: %s | Preferred: %s | Level: %s | Years: %s
+                JOB: %s | Required: %s | Preferred: %s | Level: %s | minYearsExperience: %s | maxYearsExperience: %s
                 
                 CANDIDATES: %s
                 
@@ -87,7 +297,8 @@ public class AIEnhancedCandidateRankingService {
                 """,
                 jobDescription.getJobTitle(), jobReqSkills, jobPrefSkills,
                 jobDescription.getExperienceLevel(),
-                jobDescription.getYearsOfExperience() != null ? jobDescription.getYearsOfExperience() : "N/A",
+                jobDescription.getMinYearsOfExperience() != null ? jobDescription.getMinYearsOfExperience() : "N/A",
+                jobDescription.getMaxYearsOfExperience() != null ? jobDescription.getMaxYearsOfExperience() : "N/A",
                 candidatesJson);
 
         String response = getChatClient().prompt()
@@ -165,7 +376,7 @@ public class AIEnhancedCandidateRankingService {
                     .candidateId(candidateId)
                     .name(candidate.getName())
                     .email(candidate.getEmail())
-                    .phone(candidate.getPhone())
+                    .mobile(candidate.getMobile() != null ? candidate.getMobile() : "N/A")
                     .matchPercentage(Math.min(100.0, getDouble(result, "matchPercentage")))
                     .skillMatchPercentage(getDouble(result, "skillMatchPercentage"))
                     .experienceMatchPercentage(getDouble(result, "experienceMatchPercentage"))
@@ -236,11 +447,9 @@ public class AIEnhancedCandidateRankingService {
 
         // Find start of JSON
         int startIdx = jsonString.indexOf('[');
-        char closeChar = ']';
 
         if (startIdx == -1) {
             startIdx = jsonString.indexOf('{');
-            closeChar = '}';
         }
 
         if (startIdx == -1) {
@@ -343,13 +552,11 @@ public class AIEnhancedCandidateRankingService {
         // Try to find JSON array first
         int startIdx = text.indexOf('[');
         char openChar = '[';
-        char closeChar = ']';
 
         // If no array, look for JSON object
         if (startIdx == -1) {
             startIdx = text.indexOf('{');
             openChar = '{';
-            closeChar = '}';
         }
 
         if (startIdx == -1) {
@@ -380,10 +587,10 @@ public class AIEnhancedCandidateRankingService {
 
             // Only count brackets outside of strings
             if (!inString) {
-                if (c == openChar || c == '{' || c == '[') {
+                if (c == '{' || c == '[') {
                     bracketCount++;
                     lastValidIndex = i;
-                } else if (c == closeChar || c == '}' || c == ']') {
+                } else if (c == '}' || c == ']') {
                     bracketCount--;
                     lastValidIndex = i;
                     if (bracketCount == 0) {
@@ -467,196 +674,6 @@ public class AIEnhancedCandidateRankingService {
         return null;
     }
 
-    /**
-     * Get detailed AI-powered fit analysis for a single candidate
-     */
-    public Map<String, Object> getDetailedFitAnalysis(Candidate candidate, JobDescription jobDescription) {
-        log.debug("Getting detailed fit analysis for candidate: {}", candidate.getName());
 
-        try {
-            String prompt = String.format("""
-                    Provide a detailed fit analysis for this candidate against the job description.
-                    
-                    CANDIDATE:
-                    - Name: %s
-                    - Current Position: %s
-                    - Experience: %s
-                    - Skills: %s
-                    
-                    JOB:
-                    - Title: %s
-                    - Required Skills: %s
-                    - Preferred Skills: %s
-                    - Experience Level: %s
-                    - Responsibilities: %s
-                    
-                    Return ONLY valid JSON (no markdown):
-                    {
-                      "overallFit": "percentage number 0-100",
-                      "strengths": ["strength1", "strength2"],
-                      "weaknesses": ["weakness1", "weakness2"],
-                      "developmentAreas": ["area1", "area2"],
-                      "potentialToGrow": true/false,
-                      "culturalFit": "assessment of cultural fit",
-                      "recommendedInterviewFocus": ["focus1", "focus2"],
-                      "estimatedRampUpTime": "time estimate"
-                    }
-                    """,
-                    candidate.getName(),
-                    candidate.getCurrentPosition(),
-                    candidate.getExperience(),
-                    candidate.getSkills() != null ? String.join(", ", candidate.getSkills()) : "Not specified",
-                    jobDescription.getJobTitle(),
-                    String.join(", ", jobDescription.getRequiredSkills()),
-                    String.join(", ", jobDescription.getPreferredSkills()),
-                    jobDescription.getExperienceLevel(),
-                     String.join("; ", jobDescription.getResponsibilities()));
-
-             String response = getChatClient().prompt()
-                      .user(prompt)
-                      .call()
-                      .content();
-
-              String cleanedResponse = extractAndValidateJSON(response);
-
-             Map<String, Object> analysis = parseJsonToMap(cleanedResponse);
-
-            Map<String, Object> result = new LinkedHashMap<>();
-            result.put("candidateId", candidate.getCandidateId());
-            result.put("candidateName", candidate.getName());
-            result.put("jobTitle", jobDescription.getJobTitle());
-            result.put("overallFit", getString(analysis, "overallFit"));
-            result.put("strengths", getList(analysis, "strengths"));
-            result.put("weaknesses", getList(analysis, "weaknesses"));
-            result.put("developmentAreas", getList(analysis, "developmentAreas"));
-            result.put("potentialToGrow", analysis.get("potentialToGrow"));
-            result.put("culturalFit", getString(analysis, "culturalFit"));
-            result.put("recommendedInterviewFocus", getList(analysis, "recommendedInterviewFocus"));
-            result.put("estimatedRampUpTime", getString(analysis, "estimatedRampUpTime"));
-
-            return result;
-        } catch (Exception e) {
-            log.error("Error getting detailed fit analysis", e);
-            return Map.of("error", "Failed to analyze candidate fit: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Generate interview questions tailored to candidate and job
-     */
-    public Map<String, Object> generateInterviewQuestions(Candidate candidate, JobDescription jobDescription, int questionCount) {
-        log.debug("Generating {} interview questions for candidate: {}", questionCount, candidate.getName());
-
-        try {
-            String prompt = String.format("""
-                    Generate %d targeted interview questions for evaluating this candidate for the position.
-                    Focus on assessing both technical and soft skills.
-                    
-                    CANDIDATE:
-                    - Name: %s
-                    - Current Position: %s
-                    - Experience: %s
-                    - Skills: %s
-                    
-                    JOB:
-                    - Title: %s
-                    - Required Skills: %s
-                    - Key Responsibilities: %s
-                    
-                    Return ONLY valid JSON (no markdown):
-                    {
-                      "questions": [
-                        {
-                          "question": "question text",
-                          "category": "technical/behavioral/domain/culture",
-                          "rationale": "why this question is important for this candidate"
-                        }
-                      ]
-                    }
-                    """,
-                    questionCount,
-                    candidate.getName(),
-                    candidate.getCurrentPosition(),
-                    candidate.getExperience(),
-                    candidate.getSkills() != null ? String.join(", ", candidate.getSkills()) : "Not specified",
-                    jobDescription.getJobTitle(),
-                    String.join(", ", jobDescription.getRequiredSkills()),
-                     String.join("; ", jobDescription.getResponsibilities().stream().limit(3).collect(Collectors.toList())));
-
-              String response = getChatClient().prompt()
-                      .user(prompt)
-                      .call()
-                      .content();
-
-              String cleanedResponse = extractAndValidateJSON(response);
-
-             Map<String, Object> questionsData = parseJsonToMap(cleanedResponse);
-            List<?> questionsArray = (List<?>) questionsData.get("questions");
-
-            List<Map<String, String>> questions = new ArrayList<>();
-            if (questionsArray != null) {
-                for (Object q : questionsArray) {
-                    if (q instanceof Map) {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> qMap = (Map<String, Object>) q;
-                        Map<String, String> question = new LinkedHashMap<>();
-                        question.put("question", getString(qMap, "question"));
-                        question.put("category", getString(qMap, "category"));
-                        question.put("rationale", getString(qMap, "rationale"));
-                        questions.add(question);
-                    }
-                }
-            }
-
-            Map<String, Object> result = new LinkedHashMap<>();
-            result.put("candidateId", candidate.getCandidateId());
-            result.put("candidateName", candidate.getName());
-            result.put("jobTitle", jobDescription.getJobTitle());
-            result.put("totalQuestions", questions.size());
-            result.put("questions", questions);
-
-            return result;
-        } catch (Exception e) {
-            log.error("Error generating interview questions", e);
-            return Map.of("error", "Failed to generate questions: " + e.getMessage());
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Helper methods
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Escape a string for JSON and wrap in quotes
-     * Handles null values by returning "null"
-     */
-    private String escapeJsonString(String value) {
-        if (value == null || value.isEmpty()) {
-            return "\"\"";
-        }
-        // Escape special JSON characters
-        String escaped = value
-                .replace("\\", "\\\\")  // Backslash must be first
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r")
-                .replace("\t", "\\t")
-                .replace("\b", "\\b")
-                .replace("\f", "\\f");
-        return "\"" + escaped + "\"";
-    }
-
-
-    /**
-     * Parse JSON string to Map<String, Object>
-     */
-    private Map<String, Object> parseJsonToMap(String jsonString) {
-        try {
-            return objectMapper.readValue(jsonString, new TypeReference<>() {});
-        } catch (Exception e) {
-            log.error("Failed to parse JSON to map: {}", e.getMessage(), e);
-            return new LinkedHashMap<>();
-        }
-    }
 }
 
