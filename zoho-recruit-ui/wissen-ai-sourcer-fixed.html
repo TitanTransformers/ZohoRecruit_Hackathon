@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wissen AI Sourcer — Zoho Recruit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-base:#09090B;
+  --bg-surface:#18181B;
+  --bg-elevated:#27272A;
+  --accent-purple:#7C3AED;
+  --accent-blue:#2563EB;
+  --accent-teal:#0D9488;
+  --gradient-main:linear-gradient(135deg,#7C3AED,#2563EB,#0D9488);
+  --text-primary:#FAFAFA;
+  --text-secondary:#A1A1AA;
+  --text-muted:#52525B;
+  --success:#10B981;
+  --warning:#F59E0B;
+  --danger:#EF4444;
+  --border:rgba(255,255,255,0.08);
+  --glow-purple:0 0 24px rgba(124,58,237,0.35);
+  --glow-teal:0 0 24px rgba(13,148,136,0.35);
+  --navbar-bg:rgba(9,9,11,0.85);
+  --card-bg:rgba(255,255,255,0.03);
+  --textarea-bg:rgba(0,0,0,0.3);
+  --skeleton-a:rgba(255,255,255,0.04);
+  --skeleton-b:rgba(255,255,255,0.08);
+  --skeleton-c:rgba(255,255,255,0.04);
+}
+/* ── LIGHT THEME ── */
+[data-theme="light"]{
+  --bg-base:#F4F4F5;
+  --bg-surface:#FFFFFF;
+  --bg-elevated:#E4E4E7;
+  --text-primary:#09090B;
+  --text-secondary:#52525B;
+  --text-muted:#A1A1AA;
+  --border:rgba(0,0,0,0.09);
+  --glow-purple:0 0 24px rgba(124,58,237,0.2);
+  --glow-teal:0 0 24px rgba(13,148,136,0.2);
+  --navbar-bg:rgba(255,255,255,0.9);
+  --card-bg:rgba(255,255,255,0.8);
+  --textarea-bg:rgba(0,0,0,0.04);
+  --skeleton-a:rgba(0,0,0,0.04);
+  --skeleton-b:rgba(0,0,0,0.08);
+  --skeleton-c:rgba(0,0,0,0.04);
+}
+html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg-base);color:var(--text-primary);overflow-x:hidden;transition:background .3s,color .3s}
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg-base)}
+::-webkit-scrollbar-thumb{background:var(--bg-elevated);border-radius:3px}
+
+/* ── ANIMATIONS ── */
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.85)}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes gradientShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes progressFill{from{width:0}to{width:100%}}
+@keyframes lineGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 12px 2px rgba(124,58,237,0.5),0 0 28px 6px rgba(13,148,136,0.25),inset 0 0 12px rgba(255,255,255,0.08)}50%{box-shadow:0 0 20px 6px rgba(124,58,237,0.7),0 0 40px 12px rgba(13,148,136,0.4),inset 0 0 16px rgba(255,255,255,0.12)}}
+@keyframes checkDraw{from{stroke-dashoffset:24}to{stroke-dashoffset:0}}
+@keyframes nodeAppear{0%{transform:scale(0.4);opacity:0}60%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes toastOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(20px)}}
+
+/* ── NAVBAR ── */
+#navbar{
+  position:fixed;top:0;left:0;right:0;height:64px;z-index:50;
+  background:var(--navbar-bg);backdrop-filter:blur(20px);transition:background .3s;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;
+}
+.nav-logo{display:flex;align-items:center;gap:10px}
+.nav-logo-icon{
+  width:34px;height:34px;border-radius:8px;
+  background:var(--gradient-main);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:700;
+}
+.nav-logo-text{font-weight:700;font-size:17px;letter-spacing:-.3px}
+.nav-right{display:flex;align-items:center;gap:12px}
+.cost-badge{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);
+  border-radius:20px;padding:5px 12px;font-size:13px;font-weight:500;color:#10B981;
+}
+.cost-dot{width:7px;height:7px;border-radius:50%;background:#10B981;animation:pulse 2s infinite}
+.nav-btn{
+  background:transparent;border:1px solid var(--border);color:var(--text-secondary);
+  padding:6px 14px;border-radius:8px;font-size:13px;cursor:pointer;
+  font-family:'Inter',sans-serif;transition:all .15s;
+}
+.nav-btn:hover{border-color:rgba(255,255,255,0.2);color:var(--text-primary)}
+.hackathon-pill{
+  background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);
+  color:#A78BFA;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;
+  letter-spacing:.3px;
+}
+
+/* ── LAYOUT ── */
+#layout{display:flex;padding-top:64px;min-height:100vh}
+
+/* ── SIDEBAR ── */
+#sidebar{
+  width:260px;min-height:calc(100vh - 64px);
+  background:var(--bg-surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;padding:20px 0;
+  position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto;
+}
+.sidebar-label{
+  font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;
+  color:var(--text-muted);padding:0 20px;margin-bottom:8px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 20px;font-size:14px;color:var(--text-secondary);
+  cursor:pointer;transition:all .15s;position:relative;border-radius:0;
+}
+.nav-item:hover{background:rgba(255,255,255,0.04);color:var(--text-primary)}
+.nav-item.active{
+  color:var(--text-primary);background:rgba(124,58,237,0.08);
+}
+.nav-item.active::before{
+  content:'';position:absolute;left:0;top:6px;bottom:6px;
+  width:3px;background:var(--accent-purple);border-radius:0 2px 2px 0;
+}
+.nav-icon{font-size:15px;width:20px;text-align:center}
+.sidebar-spacer{flex:1}
+.sidebar-stats{
+  margin:16px 12px 8px;
+  background:rgba(255,255,255,0.03);border:1px solid var(--border);
+  border-radius:12px;padding:16px;
+}
+.stats-title{font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:12px;text-transform:uppercase;letter-spacing:.8px}
+.stat-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.stat-label{font-size:12px;color:var(--text-muted)}
+.stat-value{font-size:13px;font-weight:600;font-family:monospace;color:var(--text-primary)}
+
+/* ── MAIN ── */
+#main{flex:1;padding:32px;overflow-y:auto;max-width:1200px}
+
+/* ── GLASS CARD ── */
+.glass-card{
+  background:var(--card-bg);
+  border:1px solid var(--border);
+  backdrop-filter:blur(12px);
+  border-radius:16px;
+  transition:background .3s,border-color .3s;
+}
+
+/* ── JD INPUT PANEL ── */
+#jd-panel{padding:32px;margin-bottom:20px}
+.panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.panel-title{font-size:20px;font-weight:600;letter-spacing:-.3px}
+.panel-subtitle{font-size:13px;color:var(--text-muted)}
+#jd-textarea{
+  width:100%;min-height:220px;
+  background:var(--textarea-bg);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:16px;
+  color:var(--text-primary);
+  font-family:'Inter',sans-serif;
+  font-size:14px;
+  line-height:1.6;
+  resize:vertical;
+  outline:none;
+  transition:border-color .2s,box-shadow .2s;
+}
+#jd-textarea:focus{border-color:#7C3AED;box-shadow:var(--glow-purple)}
+#jd-textarea::placeholder{color:var(--text-muted)}
+.textarea-meta{display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--text-muted)}
+.quick-row{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:12px;flex-wrap:wrap}
+.upload-chip{
+  display:flex;align-items:center;gap:6px;
+  border:1px dashed rgba(255,255,255,0.15);border-radius:8px;
+  padding:7px 14px;font-size:13px;color:var(--text-muted);cursor:pointer;
+  transition:all .15s;background:transparent;font-family:'Inter',sans-serif;
+}
+.upload-chip:hover{border-color:rgba(255,255,255,0.3);color:var(--text-secondary)}
+.quick-btns{display:flex;gap:8px}
+.quick-btn{
+  background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  color:var(--text-secondary);padding:6px 12px;border-radius:8px;
+  font-size:12px;font-weight:500;cursor:pointer;
+  font-family:'Inter',sans-serif;transition:all .15s;
+}
+.quick-btn:hover{background:rgba(255,255,255,0.08);color:var(--text-primary);border-color:rgba(255,255,255,0.15)}
+#submit-btn{
+  width:100%;height:52px;margin-top:16px;border-radius:12px;border:none;
+  background:linear-gradient(135deg,#7C3AED,#2563EB,#0D9488);
+  background-size:200% 200%;
+  animation:gradientShift 4s ease infinite;
+  color:#fff;font-size:16px;font-weight:600;font-family:'Inter',sans-serif;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:opacity .2s,transform .15s;
+}
+#submit-btn:hover{opacity:.88;transform:translateY(-1px)}
+#submit-btn:active{transform:translateY(0)}
+#submit-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-spinner{
+  width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);
+  border-top-color:#fff;border-radius:50%;
+  animation:spin .7s linear infinite;display:none;
+}
+
+/* ── PIPELINE ── */
+#pipeline{display:none;padding:24px 32px;margin-bottom:20px}
+.pipeline-header{font-size:14px;font-weight:600;color:var(--text-secondary);margin-bottom:20px;text-transform:uppercase;letter-spacing:.8px}
+.pipeline-steps{display:flex;align-items:center;gap:0}
+.pipeline-step{display:flex;flex-direction:column;align-items:center;flex:1;position:relative}
+.step-node{
+  width:44px;height:44px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;transition:all .3s;position:relative;z-index:2;
+}
+.step-node.waiting{background:var(--bg-elevated);border:1px solid var(--border)}
+.step-node.active{
+  background:rgba(124,58,237,0.2);border:2px solid var(--accent-purple);
+  box-shadow:0 0 16px rgba(124,58,237,0.3);
+}
+.step-node.active .step-icon{animation:spin 1.5s linear infinite;display:inline-block}
+.step-node.done{
+  background:linear-gradient(135deg,rgba(124,58,237,0.25),rgba(13,148,136,0.25));
+  border:none;
+  padding:2px;
+  position:relative;
+  animation:glowPulse 2.5s ease-in-out infinite,nodeAppear .45s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+.step-node.done::before{
+  content:'';
+  position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from 0deg,#7C3AED,#2563EB,#0D9488,#7C3AED);
+  mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#fff calc(100% - 3px));
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#fff calc(100% - 3px));
+  z-index:0;
+}
+.step-node.done .step-icon{
+  position:relative;z-index:1;
+  display:flex;align-items:center;justify-content:center;
+  width:40px;height:40px;border-radius:50%;
+  background:linear-gradient(135deg,rgba(124,58,237,0.35),rgba(13,148,136,0.35));
+}
+.step-label{font-size:12px;color:var(--text-muted);margin-top:8px;text-align:center;font-weight:500;transition:color .3s}
+.step-label.active{color:var(--text-primary)}
+.step-label.done{background:linear-gradient(90deg,#A78BFA,#5EEAD4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:600}
+.step-connector{
+  height:2px;flex:1;background:var(--border);
+  position:relative;margin-top:-22px;z-index:1;overflow:hidden;
+}
+.step-connector.done::after{
+  content:'';position:absolute;top:0;left:0;height:100%;
+  background:var(--gradient-main);transform-origin:left;
+  animation:lineGrow .4s ease forwards;
+}
+.pipeline-log{
+  margin-top:18px;padding:12px 16px;
+  background:rgba(0,0,0,0.3);border-radius:10px;
+  font-family:monospace;font-size:12px;color:var(--accent-teal);
+  min-height:36px;line-height:1.6;
+}
+.log-line{animation:fadeInUp .3s ease}
+
+/* ── RESULTS ── */
+#results-section{display:none}
+.results-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.results-title{font-size:22px;font-weight:600;letter-spacing:-.4px}
+.results-subtitle{font-size:13px;color:var(--text-muted);margin-top:4px}
+.results-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ghost-btn{
+  background:transparent;border:1px solid var(--border);color:var(--text-secondary);
+  padding:7px 14px;border-radius:8px;font-size:13px;cursor:pointer;
+  font-family:'Inter',sans-serif;transition:all .15s;
+}
+.ghost-btn:hover{border-color:rgba(255,255,255,0.2);color:var(--text-primary)}
+.filter-select{
+  background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-primary);
+  padding:7px 12px;border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;
+  cursor:pointer;outline:none;
+}
+.results-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:16px;
+}
+
+/* ── CANDIDATE CARD ── */
+.candidate-card{
+  background:var(--card-bg);
+  border:1px solid var(--border);
+  border-radius:16px;padding:24px;
+  transition:transform .2s,border-color .2s,box-shadow .2s;
+  cursor:default;
+}
+.candidate-card:hover{
+  transform:translateY(-2px);
+  border-color:rgba(124,58,237,0.4);
+  box-shadow:0 8px 32px rgba(0,0,0,0.3);
+}
+.card-top{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.avatar{
+  width:48px;height:48px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:17px;color:#fff;flex-shrink:0;
+}
+.card-info{flex:1;min-width:0}
+.card-name{font-size:15px;font-weight:600;color:var(--text-primary)}
+.card-role{font-size:13px;color:var(--text-secondary);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-company{font-size:12px;color:var(--text-muted);margin-top:1px}
+.match-ring-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
+.match-ring{position:relative;width:64px;height:64px}
+.match-ring svg{transform:rotate(-90deg)}
+.match-ring-text{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-size:13px;font-weight:700;font-family:monospace;
+}
+.fit-badge{
+  font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;
+  white-space:nowrap;letter-spacing:.2px;
+}
+.fit-strong{background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#10B981}
+.fit-possible{background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:#F59E0B}
+.fit-weak{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);color:#EF4444}
+.skills-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.skill-tag{
+  font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;
+}
+.skill-match{
+  background:rgba(13,148,136,0.12);border:1px solid rgba(13,148,136,0.28);color:#0D9488;
+}
+.skill-miss{
+  background:rgba(239,68,68,0.09);border:1px solid rgba(239,68,68,0.2);color:#EF4444;
+}
+.skill-more{
+  background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-muted);
+}
+.contact-row{
+  display:flex;align-items:center;gap:16px;margin-bottom:14px;flex-wrap:wrap;
+}
+.contact-item{
+  display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-secondary);
+  cursor:pointer;padding:3px 0;position:relative;border-radius:4px;
+  transition:color .15s;
+}
+.contact-item:hover{color:var(--text-primary)}
+.expand-toggle{
+  width:100%;background:transparent;border:none;border-top:1px solid var(--border);
+  color:var(--text-muted);font-size:12px;font-family:'Inter',sans-serif;
+  padding-top:12px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:4px;
+  transition:color .15s;
+}
+.expand-toggle:hover{color:var(--accent-teal)}
+.expand-content{
+  padding-top:12px;display:none;
+}
+.expand-content.open{display:block;animation:fadeInUp .2s ease}
+.fit-summary{font-size:13px;color:var(--text-secondary);font-style:italic;line-height:1.6;margin-bottom:10px}
+.expand-meta{display:flex;gap:16px;flex-wrap:wrap}
+.expand-meta-item{font-size:12px;color:var(--text-muted)}
+.expand-meta-item span{color:var(--text-secondary);font-weight:500}
+
+/* ── SKELETON ── */
+#loading-state{display:none}
+.skeleton-card{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:16px;padding:24px}
+.skeleton-line{
+  border-radius:4px;margin-bottom:10px;
+  background:linear-gradient(90deg,var(--skeleton-a) 0%,var(--skeleton-b) 50%,var(--skeleton-c) 100%);
+  background-size:400px 100%;
+  animation:shimmer 1.5s infinite;
+}
+
+/* ── EMPTY STATE ── */
+#empty-state{display:none;text-align:center;padding:80px 20px}
+.empty-icon{font-size:48px;margin-bottom:16px}
+.empty-title{font-size:20px;font-weight:600;margin-bottom:8px}
+.empty-sub{font-size:14px;color:var(--text-muted);margin-bottom:24px}
+
+/* ── TOOLTIP ── */
+.tooltip{
+  position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);
+  background:var(--success);color:#fff;font-size:11px;font-weight:600;
+  padding:3px 8px;border-radius:4px;white-space:nowrap;pointer-events:none;
+  opacity:0;transition:opacity .15s;z-index:10;
+}
+.tooltip.show{opacity:1}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;top:80px;right:20px;z-index:100;
+  background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);
+  border-radius:10px;padding:12px 16px;font-size:13px;
+  display:none;max-width:300px;
+}
+
+/* ── THEME TOGGLE ── */
+.theme-toggle{
+  display:flex;align-items:center;background:var(--bg-elevated);
+  border:1px solid var(--border);border-radius:20px;padding:3px;gap:2px;
+  transition:background .3s,border-color .3s;
+}
+.theme-btn{
+  width:28px;height:28px;border-radius:16px;border:none;background:transparent;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:13px;color:var(--text-muted);transition:all .2s;
+}
+.theme-btn.active{
+  background:var(--bg-surface);color:var(--text-primary);
+  box-shadow:0 1px 4px rgba(0,0,0,0.3);
+}
+.theme-btn:hover:not(.active){color:var(--text-secondary)}
+
+/* ── PAGE VIEWS ── */
+.page-view{display:none;animation:fadeInUp .3s ease}
+.page-view.active{display:block}
+
+/* ── PLACEHOLDER PAGES ── */
+.placeholder-page{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:400px;text-align:center;
+}
+.placeholder-icon{font-size:56px;margin-bottom:20px;opacity:.6}
+.placeholder-title{font-size:22px;font-weight:600;margin-bottom:8px;color:var(--text-primary)}
+.placeholder-desc{font-size:14px;color:var(--text-muted);max-width:340px;line-height:1.6}
+
+/* ── SIDEBAR BG ── */
+#sidebar{background:var(--bg-surface);transition:background .3s}
+
+/* ── PIPELINE BG ── */
+.pipeline-log{background:rgba(0,0,0,0.15)}
+[data-theme="light"] .pipeline-log{background:rgba(0,0,0,0.05);color:var(--accent-teal)}
+[data-theme="light"] #jd-textarea{color:var(--text-primary)}
+[data-theme="light"] .skeleton-card{background:rgba(0,0,0,0.04);border-color:var(--border)}
+[data-theme="light"] .sidebar-stats{background:rgba(0,0,0,0.03)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  #sidebar{display:none}
+  #main{padding:16px}
+  .results-grid{grid-template-columns:1fr}
+  .nav-logo-text{display:none}
+}
+@media(max-width:1024px){
+  #sidebar{width:220px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav id="navbar">
+  <div class="nav-logo">
+    <div class="nav-logo-icon">✦</div>
+    <span class="nav-logo-text">Wissen AI Sourcer</span>
+  </div>
+  <div class="nav-right">
+    <div class="cost-badge">
+      <div class="cost-dot"></div>
+      <span id="cost-display">~$0.000 used</span>
+    </div>
+    <div class="theme-toggle" title="Toggle theme">
+      <button class="theme-btn active" id="theme-dark" onclick="setTheme('dark')" title="Dark">🌙</button>
+      <button class="theme-btn" id="theme-light" onclick="setTheme('light')" title="Light">☀️</button>
+    </div>
+    <button class="nav-btn">Docs</button>
+    <div class="hackathon-pill">Hackathon 2026</div>
+  </div>
+</nav>
+
+<!-- LAYOUT -->
+<div id="layout">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <div class="sidebar-label">Navigation</div>
+    <div class="nav-item active" onclick="navigateTo('source')" data-page="source">
+      <span class="nav-icon">⚡</span> Source Candidates
+    </div>
+    <div class="nav-item" onclick="navigateTo('past')" data-page="past">
+      <span class="nav-icon">📋</span> Past Searches
+    </div>
+    <div class="nav-item" onclick="navigateTo('analytics')" data-page="analytics">
+      <span class="nav-icon">📊</span> Analytics
+    </div>
+    <div class="nav-item" onclick="navigateTo('settings')" data-page="settings">
+      <span class="nav-icon">⚙</span> Settings
+    </div>
+    <div class="sidebar-spacer"></div>
+    <div class="sidebar-stats glass-card" style="margin:16px 12px;border-radius:12px">
+      <div class="stats-title">Session Stats</div>
+      <div class="stat-row">
+        <span class="stat-label">API calls made</span>
+        <span class="stat-value" id="stat-calls">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Candidates found</span>
+        <span class="stat-value" id="stat-candidates">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Avg match %</span>
+        <span class="stat-value" id="stat-avg">—</span>
+      </div>
+      <div class="stat-row" style="margin-bottom:0">
+        <span class="stat-label">Total cost</span>
+        <span class="stat-value" id="stat-cost">$0.00</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="main">
+
+    <!-- PAGE: SOURCE CANDIDATES -->
+    <div id="page-source" class="page-view active">
+
+    <!-- JD INPUT PANEL -->
+    <div id="jd-panel" class="glass-card">
+      <div class="panel-header">
+        <h2 class="panel-title">Paste Job Description</h2>
+        <span class="panel-subtitle">Supports .txt .pdf .docx</span>
+      </div>
+      <textarea id="jd-textarea" placeholder="Senior Java Developer — 6-10 years&#10;Skills: Spring Boot, Microservices, Kafka, AWS&#10;Domain: BFSI / Capital Markets&#10;Location: Bangalore / Hybrid"></textarea>
+      <div class="textarea-meta">
+        <span id="char-count">0 characters</span>
+        <span id="word-count">0 words</span>
+      </div>
+      <div class="quick-row">
+        <button class="upload-chip">+ Upload JD file</button>
+        <div class="quick-btns">
+          <button class="quick-btn" onclick="quickFill('java')">Java Backend</button>
+          <button class="quick-btn" onclick="quickFill('data')">Data Engineer</button>
+          <button class="quick-btn" onclick="quickFill('devops')">DevOps Lead</button>
+        </div>
+      </div>
+      <button id="submit-btn" onclick="startSearch()">
+        <div class="btn-spinner" id="btn-spinner"></div>
+        <span id="btn-text">⚡ Find Best Candidates</span>
+      </button>
+    </div>
+
+    <!-- PIPELINE STATUS -->
+    <div id="pipeline" class="glass-card">
+      <div class="pipeline-header">Search Pipeline</div>
+      <div class="pipeline-steps">
+        <div class="pipeline-step" id="step-0">
+          <div class="step-node waiting" id="node-0"><span class="step-icon">🧠</span></div>
+          <div class="step-label" id="label-0">Parsing JD</div>
+        </div>
+        <div class="step-connector" id="conn-0"></div>
+        <div class="pipeline-step" id="step-1">
+          <div class="step-node waiting" id="node-1"><span class="step-icon">🔍</span></div>
+          <div class="step-label" id="label-1">Generating Queries</div>
+        </div>
+        <div class="step-connector" id="conn-1"></div>
+        <div class="pipeline-step" id="step-2">
+          <div class="step-node waiting" id="node-2"><span class="step-icon">📡</span></div>
+          <div class="step-label" id="label-2">Searching Zoho</div>
+        </div>
+        <div class="step-connector" id="conn-2"></div>
+        <div class="pipeline-step" id="step-3">
+          <div class="step-node waiting" id="node-3"><span class="step-icon">🏆</span></div>
+          <div class="step-label" id="label-3">Ranking Candidates</div>
+        </div>
+      </div>
+      <div class="pipeline-log" id="pipeline-log"><span style="color:var(--text-muted)">Initializing pipeline...</span></div>
+    </div>
+
+    <!-- LOADING SKELETON -->
+    <div id="loading-state">
+      <div class="results-grid">
+        <div class="skeleton-card"><div class="skeleton-line" style="height:48px;width:60%;margin-bottom:16px"></div><div class="skeleton-line" style="height:14px;width:90%"></div><div class="skeleton-line" style="height:14px;width:75%"></div><div class="skeleton-line" style="height:14px;width:50%"></div></div>
+        <div class="skeleton-card"><div class="skeleton-line" style="height:48px;width:55%;margin-bottom:16px"></div><div class="skeleton-line" style="height:14px;width:85%"></div><div class="skeleton-line" style="height:14px;width:70%"></div><div class="skeleton-line" style="height:14px;width:60%"></div></div>
+        <div class="skeleton-card"><div class="skeleton-line" style="height:48px;width:65%;margin-bottom:16px"></div><div class="skeleton-line" style="height:14px;width:80%"></div><div class="skeleton-line" style="height:14px;width:65%"></div><div class="skeleton-line" style="height:14px;width:45%"></div></div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="results-section">
+      <div class="results-header">
+        <div>
+          <h2 class="results-title" id="results-title">47 Candidates Found</h2>
+          <p class="results-subtitle" id="results-subtitle">Ranked by AI match score · Java Backend Developer · 6-10 yrs</p>
+        </div>
+        <div class="results-actions">
+          <button class="ghost-btn" onclick="exportJSON()">↓ Export JSON</button>
+          <button class="ghost-btn" onclick="exportCSV()">↓ Export CSV</button>
+          <select class="filter-select" onchange="filterResults(this.value)" id="filter-select">
+            <option value="all">All Candidates</option>
+            <option value="strong">Strong Fit</option>
+            <option value="possible">Possible Fit</option>
+            <option value="weak">Weak Fit</option>
+          </select>
+        </div>
+      </div>
+      <div id="results-grid" class="results-grid"></div>
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div id="empty-state">
+      <div class="empty-icon">🔍</div>
+      <div class="empty-title">No candidates found</div>
+      <div class="empty-sub">Try broadening your search or adjusting the JD</div>
+      <button class="ghost-btn" onclick="resetSearch()">Try Different JD</button>
+    </div>
+
+    </div><!-- end page-source -->
+
+    <!-- PAGE: PAST SEARCHES -->
+    <div id="page-past" class="page-view">
+      <div class="placeholder-page">
+        <div class="placeholder-icon">📋</div>
+        <div class="placeholder-title">Past Searches</div>
+        <div class="placeholder-desc">Your recent sourcing runs will appear here. Run your first search to get started.</div>
+      </div>
+    </div>
+
+    <!-- PAGE: ANALYTICS -->
+    <div id="page-analytics" class="page-view">
+      <div class="placeholder-page">
+        <div class="placeholder-icon">📊</div>
+        <div class="placeholder-title">Analytics</div>
+        <div class="placeholder-desc">Track sourcing performance, match score trends, and cost efficiency across all your searches.</div>
+      </div>
+    </div>
+
+    <!-- PAGE: SETTINGS -->
+    <div id="page-settings" class="page-view">
+      <div class="placeholder-page">
+        <div class="placeholder-icon">⚙️</div>
+        <div class="placeholder-title">Settings</div>
+        <div class="placeholder-desc">Configure your Zoho Recruit integration, API keys, and sourcing preferences here.</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ── NAVIGATION ──
+function navigateTo(page) {
+  // Update sidebar active state
+  document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+    item.classList.toggle('active', item.dataset.page === page);
+  });
+  // Show correct page view
+  document.querySelectorAll('.page-view').forEach(view => {
+    view.classList.toggle('active', view.id === 'page-' + page);
+  });
+}
+
+// ── THEME ──
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : '');
+  document.getElementById('theme-dark').classList.toggle('active', theme === 'dark');
+  document.getElementById('theme-light').classList.toggle('active', theme === 'light');
+  localStorage.setItem('wissen-theme', theme);
+}
+
+// Restore saved theme on load
+(function() {
+  const saved = localStorage.getItem('wissen-theme');
+  if (saved === 'light') setTheme('light');
+})();
+
+// ── MOCK DATA ──
+const SAMPLE_JDs = {
+  java: `Senior Java Developer — 6-10 years experience.
+Required: Java, Spring Boot, Microservices, Kafka, AWS, REST APIs.
+Preferred: Docker, Kubernetes, Redis, BFSI domain.
+Location: Bangalore. Hybrid work.
+Responsibilities: Design and build distributed backend systems for capital markets platform. Lead a team of 4 developers. Own architecture decisions for microservices decomposition.`,
+  data: `Senior Data Engineer — 5-8 years experience.
+Required: Python, Apache Spark, Airflow, SQL, Snowflake, dbt.
+Preferred: Databricks, AWS Glue, Kafka, Scala.
+Location: Hyderabad / Remote.
+Responsibilities: Build and maintain scalable data pipelines. Design data lakehouse architecture. Collaborate with data scientists and analysts.`,
+  devops: `DevOps Lead — 7-12 years experience.
+Required: Kubernetes, Terraform, Jenkins, AWS/GCP, Docker, Helm.
+Preferred: ArgoCD, Prometheus, Grafana, Python scripting, SRE practices.
+Location: Pune. On-site preferred.
+Responsibilities: Own CI/CD infrastructure for 30+ microservices. Drive platform engineering initiatives. Mentor junior DevOps engineers.`
+};
+
+const MOCK_CANDIDATES = [
+  {
+    id:1, name:'Arjun Sharma', role:'Senior Java Developer', company:'Infosys Ltd',
+    years:8, email:'arjun.sharma@email.com', phone:'+91-9876543210',
+    matchPct:92, fit:'strong',
+    matchedSkills:['Java','Spring Boot','Kafka','AWS','Redis'],
+    missingSkills:['Kubernetes'],
+    summary:'Arjun is an exceptional match — he brings 8 years of hands-on Java and Spring Boot expertise in BFSI domain, with deep Kafka and AWS experience directly aligned to your tech stack.',
+    lastActive:'2 days ago'
+  },
+  {
+    id:2, name:'Priya Nair', role:'Java Backend Engineer', company:'Wipro Technologies',
+    years:6, email:'priya.nair@email.com', phone:'+91-9812345678',
+    matchPct:78, fit:'possible',
+    matchedSkills:['Java','Spring Boot','Microservices','Docker'],
+    missingSkills:['Kafka','Redis'],
+    summary:'Priya has solid foundational skills in Java and Spring Boot with containerization experience. Lacks Kafka/Redis but her microservices depth makes her a trainable candidate.',
+    lastActive:'5 days ago'
+  },
+  {
+    id:3, name:'Rohit Mehta', role:'Principal Java Architect', company:'TCS',
+    years:10, email:'rohit.mehta@email.com', phone:'+91-9988776655',
+    matchPct:85, fit:'strong',
+    matchedSkills:['Java','Kafka','AWS','Kubernetes','Redis'],
+    missingSkills:['Spring Boot'],
+    summary:'Rohit brings 10 years of senior Java experience with a strong distributed systems background. His Kubernetes and Kafka proficiency is a rare find for this level of role.',
+    lastActive:'1 week ago'
+  },
+  {
+    id:4, name:'Sneha Iyer', role:'Java Developer', company:'HCL Technologies',
+    years:5, email:'sneha.iyer@email.com', phone:'+91-9123456789',
+    matchPct:61, fit:'possible',
+    matchedSkills:['Java','Spring Boot','REST APIs'],
+    missingSkills:['Kafka','Kubernetes','AWS'],
+    summary:'Sneha is slightly below the experience bar at 5 years but demonstrates strong Spring Boot proficiency. Would need cloud and messaging platform upskilling.',
+    lastActive:'3 days ago'
+  },
+  {
+    id:5, name:'Karthik Rajan', role:'Java Microservices Developer', company:'Cognizant',
+    years:7, email:'karthik.rajan@email.com', phone:'+91-9654321098',
+    matchPct:74, fit:'possible',
+    matchedSkills:['Java','Microservices','Docker','AWS'],
+    missingSkills:['Kafka','Redis'],
+    summary:'Karthik has good microservices and cloud experience with a respectable 7 years. Missing Kafka and Redis experience, but his AWS and Docker fluency is valuable for this role.',
+    lastActive:'Yesterday'
+  }
+];
+
+const PIPELINE_LOGS = [
+  '🧠 Parsing JD... extracted 8 required skills, 4 preferred',
+  '🔍 Generated 3 search strategies (precision / balanced / recall)',
+  '📡 Searching Zoho Recruit... found 47 candidates across 3 pages',
+  '🏆 Ranking top 20 with AI · keyword scoring remaining 27',
+  '✅ Complete · 5 strong fits · 3 possible · cost: $0.018'
+];
+
+const AVATAR_GRADIENTS = [
+  'linear-gradient(135deg,#7C3AED,#4F46E5)',
+  'linear-gradient(135deg,#0D9488,#0891B2)',
+  'linear-gradient(135deg,#2563EB,#7C3AED)',
+  'linear-gradient(135deg,#D97706,#DC2626)',
+  'linear-gradient(135deg,#059669,#0D9488)'
+];
+
+// ── STATE ──
+let sessionState = {calls:0, candidates:0, totalCost:0, totalMatch:0};
+let allCandidates = [];
+let searchCount = 0;
+
+// ── TEXTAREA COUNTER ──
+const textarea = document.getElementById('jd-textarea');
+textarea.addEventListener('input', () => {
+  const val = textarea.value;
+  document.getElementById('char-count').textContent = val.length + ' characters';
+  const words = val.trim() ? val.trim().split(/\s+/).length : 0;
+  document.getElementById('word-count').textContent = words + ' words';
+});
+
+// ── QUICK FILL ──
+function quickFill(type) {
+  textarea.value = SAMPLE_JDs[type];
+  textarea.dispatchEvent(new Event('input'));
+  textarea.focus();
+}
+
+// ── MAIN SEARCH FLOW ──
+async function startSearch() {
+  const jd = textarea.value.trim();
+  if (!jd) { showToast('Please paste a job description first.'); return; }
+
+  // UI → loading
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  document.getElementById('btn-spinner').style.display = 'block';
+  document.getElementById('btn-text').textContent = 'Searching Zoho Recruit...';
+
+  document.getElementById('pipeline').style.display = 'block';
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('loading-state').style.display = 'none';
+  document.getElementById('empty-state').style.display = 'none';
+  resetPipeline();
+
+  searchCount++;
+
+  // Animate pipeline phases
+  await animatePipeline();
+
+  // Show loading skeleton briefly
+  document.getElementById('loading-state').style.display = 'block';
+  await delay(600);
+  document.getElementById('loading-state').style.display = 'none';
+
+  // Show results
+  allCandidates = [...MOCK_CANDIDATES];
+  renderResults(allCandidates);
+
+  // Update stats
+  sessionState.calls += 3;
+  sessionState.candidates = allCandidates.length;
+  sessionState.totalCost += 0.018;
+  const avg = Math.round(allCandidates.reduce((s,c)=>s+c.matchPct,0)/allCandidates.length);
+  sessionState.totalMatch = avg;
+  updateStats();
+
+  // Reset button
+  btn.disabled = false;
+  document.getElementById('btn-spinner').style.display = 'none';
+  document.getElementById('btn-text').textContent = '⚡ Find Best Candidates';
+
+  document.getElementById('results-section').style.display = 'block';
+  document.getElementById('results-section').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function resetPipeline() {
+  for(let i=0;i<4;i++){
+    const node = document.getElementById('node-'+i);
+    const label = document.getElementById('label-'+i);
+    node.className = 'step-node waiting';
+    label.className = 'step-label';
+    if(i<3) document.getElementById('conn-'+i).className = 'step-connector';
+  }
+  document.getElementById('pipeline-log').innerHTML = '<span style="color:var(--text-muted)">Initializing pipeline...</span>';
+}
+
+async function animatePipeline() {
+  const durations = [900, 900, 1100, 1000];
+  for(let i=0;i<4;i++){
+    setStepActive(i);
+    addLog(PIPELINE_LOGS[i]);
+    await delay(durations[i]);
+    setStepDone(i);
+    if(i<3){ document.getElementById('conn-'+i).className='step-connector done'; }
+    await delay(150);
+  }
+  addLog(PIPELINE_LOGS[4]);
+}
+
+function setStepActive(i) {
+  const node = document.getElementById('node-'+i);
+  const label = document.getElementById('label-'+i);
+  node.className = 'step-node active';
+  label.className = 'step-label active';
+}
+
+function setStepDone(i) {
+  const node = document.getElementById('node-'+i);
+  const label = document.getElementById('label-'+i);
+  node.className = 'step-node done';
+  node.innerHTML = `<span class="step-icon">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polyline points="4,11 9,16 18,6"
+        stroke="url(#ckGrad${i})" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+        stroke-dasharray="24" stroke-dashoffset="24"
+        style="animation:checkDraw .4s ease .1s forwards"/>
+      <defs>
+        <linearGradient id="ckGrad${i}" x1="4" y1="11" x2="18" y2="6" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#A78BFA"/>
+          <stop offset="100%" stop-color="#5EEAD4"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  </span>`;
+  label.className = 'step-label done';
+}
+
+function addLog(msg) {
+  const log = document.getElementById('pipeline-log');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.textContent = '→ ' + msg;
+  log.innerHTML = '';
+  log.appendChild(line);
+}
+
+// ── RENDER RESULTS ──
+function renderResults(candidates) {
+  const grid = document.getElementById('results-grid');
+  grid.innerHTML = '';
+
+  if(!candidates.length) {
+    document.getElementById('results-section').style.display = 'none';
+    document.getElementById('empty-state').style.display = 'block';
+    return;
+  }
+
+  document.getElementById('results-title').textContent = '47 Candidates Found';
+  document.getElementById('results-subtitle').textContent = 'Ranked by AI match score · Java Backend Developer · 6-10 yrs';
+
+  candidates.forEach((c, idx) => {
+    const card = createCandidateCard(c, idx);
+    grid.appendChild(card);
+  });
+}
+
+function createCandidateCard(c, idx) {
+  const div = document.createElement('div');
+  div.className = 'candidate-card';
+  div.style.animation = `fadeInUp .4s ease ${idx * 60}ms both`;
+  div.dataset.fit = c.fit;
+
+  const initials = c.name.split(' ').map(n=>n[0]).join('').substring(0,2);
+  const grad = AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length];
+  const ringColor = c.matchPct >= 80 ? '#10B981' : c.matchPct >= 60 ? '#F59E0B' : '#EF4444';
+  const fitClass = c.fit === 'strong' ? 'fit-strong' : c.fit === 'possible' ? 'fit-possible' : 'fit-weak';
+  const fitLabel = c.fit === 'strong' ? 'Strong Fit' : c.fit === 'possible' ? 'Possible Fit' : 'Weak Fit';
+
+  // Skills HTML
+  const maxMatch = 4, maxMiss = 2;
+  let skillsHTML = '';
+  c.matchedSkills.slice(0,maxMatch).forEach(s=>{
+    skillsHTML += `<span class="skill-tag skill-match">${s}</span>`;
+  });
+  c.missingSkills.slice(0,maxMiss).forEach(s=>{
+    skillsHTML += `<span class="skill-tag skill-miss">✕ ${s}</span>`;
+  });
+  const overflow = (c.matchedSkills.length - maxMatch) + (c.missingSkills.length - maxMiss);
+  if(overflow > 0) skillsHTML += `<span class="skill-tag skill-more">+${overflow} more</span>`;
+
+  // SVG ring
+  const r = 27, circ = 2*Math.PI*r;
+  const offset = circ - (c.matchPct/100)*circ;
+
+  div.innerHTML = `
+    <div class="card-top">
+      <div class="avatar" style="background:${grad}">${initials}</div>
+      <div class="card-info">
+        <div class="card-name">${c.name}</div>
+        <div class="card-role">${c.role}</div>
+        <div class="card-company">${c.company}</div>
+      </div>
+      <div class="match-ring-wrap">
+        <div class="match-ring">
+          <svg width="64" height="64" viewBox="0 0 64 64">
+            <circle cx="32" cy="32" r="${r}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="5"/>
+            <circle cx="32" cy="32" r="${r}" fill="none" stroke="${ringColor}" stroke-width="5"
+              stroke-linecap="round"
+              stroke-dasharray="${circ}"
+              stroke-dashoffset="${circ}"
+              style="transition:stroke-dashoffset 1s ease ${idx*120}ms"
+              data-offset="${offset}"
+              class="ring-progress"/>
+          </svg>
+          <div class="match-ring-text" style="color:${ringColor}">${c.matchPct}%</div>
+        </div>
+        <span class="fit-badge ${fitClass}">${fitLabel}</span>
+      </div>
+    </div>
+    <div class="skills-row">${skillsHTML}</div>
+    <div class="contact-row">
+      <div class="contact-item" onclick="copyText(this,'${c.email}')">
+        <span>📧</span><span>${c.email}</span>
+        <span class="tooltip">Copied!</span>
+      </div>
+      <div class="contact-item" onclick="copyText(this,'${c.phone}')">
+        <span>📞</span><span>${c.phone}</span>
+        <span class="tooltip">Copied!</span>
+      </div>
+    </div>
+    <button class="expand-toggle" onclick="toggleExpand(this)">
+      <span class="expand-arrow">▾</span> View fit summary
+    </button>
+    <div class="expand-content">
+      <p class="fit-summary">"${c.summary}"</p>
+      <div class="expand-meta">
+        <div class="expand-meta-item">Experience: <span>${c.years} years</span></div>
+        <div class="expand-meta-item">Last active: <span>${c.lastActive}</span></div>
+      </div>
+    </div>
+  `;
+
+  // Animate ring after DOM insertion
+  requestAnimationFrame(() => {
+    const ring = div.querySelector('.ring-progress');
+    if(ring) {
+      setTimeout(()=>{ ring.style.strokeDashoffset = ring.dataset.offset; }, 100);
+    }
+  });
+
+  return div;
+}
+
+// ── INTERACTIONS ──
+function toggleExpand(btn) {
+  const content = btn.nextElementSibling;
+  const arrow = btn.querySelector('.expand-arrow');
+  const open = content.classList.toggle('open');
+  arrow.textContent = open ? '▴' : '▾';
+  btn.querySelector('span:last-of-type').textContent = open ? ' Hide fit summary' : ' View fit summary';
+}
+
+function copyText(el, text) {
+  navigator.clipboard.writeText(text).catch(()=>{});
+  const tip = el.querySelector('.tooltip');
+  tip.classList.add('show');
+  setTimeout(()=>tip.classList.remove('show'), 2000);
+}
+
+function filterResults(val) {
+  if(!allCandidates.length) return;
+  const filtered = val === 'all' ? allCandidates :
+    allCandidates.filter(c => c.fit === val || (val==='possible' && c.fit==='possible'));
+  const grid = document.getElementById('results-grid');
+  Array.from(grid.children).forEach(card => {
+    if(val==='all' || card.dataset.fit===val) {
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+
+function resetSearch() {
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('pipeline').style.display = 'none';
+  textarea.value = '';
+  textarea.dispatchEvent(new Event('input'));
+  textarea.focus();
+}
+
+function updateStats() {
+  document.getElementById('stat-calls').textContent = sessionState.calls;
+  document.getElementById('stat-candidates').textContent = sessionState.candidates;
+  document.getElementById('stat-avg').textContent = sessionState.totalMatch + '%';
+  document.getElementById('stat-cost').textContent = '$' + sessionState.totalCost.toFixed(3);
+  document.getElementById('cost-display').textContent = '~$' + sessionState.totalCost.toFixed(3) + ' used';
+}
+
+// ── EXPORT ──
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(allCandidates, null, 2)], {type:'application/json'});
+  downloadBlob(blob, 'candidates.json');
+}
+
+function exportCSV() {
+  const headers = ['Name','Role','Company','Years','Match%','Fit','Email','Phone'];
+  const rows = allCandidates.map(c => [
+    c.name, c.role, c.company, c.years, c.matchPct+'%', c.fit, c.email, c.phone
+  ]);
+  const csv = [headers, ...rows].map(r=>r.join(',')).join('\n');
+  downloadBlob(new Blob([csv], {type:'text/csv'}), 'candidates.csv');
+}
+
+function downloadBlob(blob, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  t.style.animation = 'toastIn .3s ease';
+  setTimeout(() => {
+    t.style.animation = 'toastOut .3s ease forwards';
+    setTimeout(() => t.style.display = 'none', 300);
+  }, 4000);
+}
+
+// ── UTILS ──
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>

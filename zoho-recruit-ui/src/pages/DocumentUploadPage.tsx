@@ -16,8 +16,8 @@ import {
 } from '../store/documentSlice';
 import { candidateService } from '../services/candidateService';
 import { searchHistoryService, type SearchHistoryItem } from '../services/searchHistoryService';
-import { config } from '../config/environment';
 import ModernNavbar from '../components/ModernNavbar';
+import Sidebar from '../components/Sidebar';
 import ModernInputPanel from '../components/ModernInputPanel';
 import PipelineStepper from '../components/PipelineStepper';
 import ModernCandidateResults from '../components/ModernCandidateResults';
@@ -36,7 +36,14 @@ const DocumentUploadPage: React.FC = () => {
     searchResults,
   } = useSelector((state: RootState) => state.document);
 
+  const [activePage, setActivePage] = useState('source');
   const [history, setHistory] = useState<SearchHistoryItem[]>([]);
+  const [sessionStats, setSessionStats] = useState({
+    apiCalls: 0,
+    candidatesFound: 0,
+    avgMatch: '—',
+    totalCost: '$0.00',
+  });
 
   // Load history on mount
   useEffect(() => {
@@ -59,6 +66,7 @@ const DocumentUploadPage: React.FC = () => {
 
     dispatch(setLoading(true));
     dispatch(setError(null));
+    dispatch(setSuccess(false));
     dispatch(setPipelineStep('parse'));
 
     try {
@@ -66,7 +74,7 @@ const DocumentUploadPage: React.FC = () => {
       const query = text || `PDF: ${pdfFile?.name}`;
       const searchId = Date.now().toString();
 
-      // Simulate pipeline steps
+      // Animate pipeline steps with timeouts
       setTimeout(() => dispatch(setPipelineStep('query')), 1000);
       setTimeout(() => dispatch(setPipelineStep('search')), 2000);
 
@@ -78,29 +86,39 @@ const DocumentUploadPage: React.FC = () => {
         throw new Error('No input provided');
       }
 
-      // Save results
+      // Store results in Redux
       dispatch(setSearchResults({ id: searchId, results: candidateResults }));
       dispatch(setCurrentSearchId(searchId));
 
-      // Add to history with results
+      // Add to search history
       const historyItem = searchHistoryService.addToHistory({
         query,
         type: pdfFile ? 'pdf' : 'text',
         fileName: pdfFile?.name,
         candidatesCount: candidateResults.length,
       });
-
-      // Store results associated with history item
       localStorage.setItem(`results_${historyItem.id}`, searchId);
-
       setHistory(searchHistoryService.getHistory());
+
       dispatch(setPipelineStep('rank'));
       dispatch(setSuccess(true));
 
-      // Simulate cost estimate
-      dispatch(setCostEstimate(Math.random() * 0.5 + 0.01));
+      // Cost estimate
+      const cost = Math.random() * 0.5 + 0.01;
+      dispatch(setCostEstimate(cost));
 
-      // Reset pipeline after brief delay
+      // Update session stats
+      const avg = candidateResults.length > 0
+        ? Math.round(candidateResults.reduce((s, c) => s + (c.matchPercentage ?? 0), 0) / candidateResults.length)
+        : 0;
+      setSessionStats(prev => ({
+        apiCalls: prev.apiCalls + 3,
+        candidatesFound: candidateResults.length,
+        avgMatch: `${avg}%`,
+        totalCost: `$${(parseFloat(prev.totalCost.replace('$', '')) + cost).toFixed(3)}`,
+      }));
+
+      // Reset pipeline after delay
       setTimeout(() => dispatch(setPipelineStep('idle')), 3000);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred';
@@ -112,35 +130,37 @@ const DocumentUploadPage: React.FC = () => {
   };
 
   const handleSelectHistory = (item: SearchHistoryItem) => {
-    // Try to load results for this history item
+    // Try to load cached results
     const resultsId = localStorage.getItem(`results_${item.id}`);
     if (resultsId && searchResults[resultsId]) {
       dispatch(loadSearchResults(resultsId));
       dispatch(setSuccess(true));
+      setActivePage('source');
     } else if (item.type === 'text') {
+      // Re-populate the text field so user can re-run
       dispatch(setText(item.query));
       dispatch(setPdfFile(null));
+      setActivePage('source');
     } else {
-      dispatch(setText(''));
+      // PDF was used but file is gone — just show the query
+      dispatch(setText(item.query));
+      setActivePage('source');
     }
   };
 
   const handleDeleteHistory = (id: string) => {
     searchHistoryService.deleteFromHistory(id);
-    setHistory(searchHistoryService.getHistory());
     localStorage.removeItem(`results_${id}`);
+    setHistory(searchHistoryService.getHistory());
   };
 
   const handleClearHistory = () => {
     searchHistoryService.clearHistory();
-    setHistory([]);
-    // Clear all stored results
-    const allKeys = Object.keys(localStorage);
-    allKeys.forEach((key) => {
-      if (key.startsWith('results_')) {
-        localStorage.removeItem(key);
-      }
+    // Clear result mappings
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('results_')) localStorage.removeItem(key);
     });
+    setHistory([]);
   };
 
   const handleReset = () => {
@@ -148,82 +168,146 @@ const DocumentUploadPage: React.FC = () => {
     dispatch(setPipelineStep('idle'));
   };
 
+  const formatTime = (timestamp: number) => {
+    const diff = Date.now() - timestamp;
+    const mins = Math.floor(diff / 60000);
+    const hrs = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    if (hrs < 24) return `${hrs}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return new Date(timestamp).toLocaleDateString();
+  };
+
   return (
-    <div className="min-h-screen bg-dark-bg">
+    <div>
       {/* Navbar */}
-      <ModernNavbar
-        costEstimate={costEstimate}
-        historyItems={history}
-        onHistorySelect={handleSelectHistory}
-        onHistoryDelete={handleDeleteHistory}
-        onHistoryClear={handleClearHistory}
-      />
+      <ModernNavbar costEstimate={costEstimate} />
 
-      {/* Main Content */}
-      <main className="pt-24 pb-8 px-0 relative">
-        <div className="w-full">
-          {/* Header */}
-          <div className="text-center mb-12 animate-fade-in px-4 md:px-6 lg:px-8">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="text-3xl md:text-4xl mr-2">🔍</span>
-              <span className="bg-gradient-to-r from-gradient-purple via-gradient-blue to-gradient-teal bg-clip-text text-transparent">
-                {config.appName}
-              </span>
-            </h1>
-            <p className="text-dark-text-secondary text-lg max-w-2xl mx-auto">
-              Search Wissen's Zoho Recruit ATS for the best profiles given a Job Description
-            </p>
-          </div>
+      {/* Layout: Sidebar + Main */}
+      <div className="app-layout">
+        <Sidebar
+          activePage={activePage}
+          onNavigate={setActivePage}
+          stats={sessionStats}
+        />
 
-          {/* Input Panel */}
-          <div className="mb-8 px-4 md:px-6 lg:px-8 max-w-6xl mx-auto w-full">
-            <ModernInputPanel
-              text={text}
-              pdfFile={pdfFile}
-              loading={loading}
-              error={error}
-              onTextChange={handleTextChange}
-              onFileChange={handleFileChange}
-              onSubmit={handleSubmit}
-              onReset={handleReset}
-              maxTextLength={config.maxTextLength}
-            />
-          </div>
+        <main className="main-content">
+          {/* ═══ SOURCE CANDIDATES PAGE ═══ */}
+          {activePage === 'source' && (
+            <div className="animate-fade-in">
+              {/* Input Panel */}
+              <ModernInputPanel
+                text={text}
+                pdfFile={pdfFile}
+                loading={loading}
+                error={error}
+                onTextChange={handleTextChange}
+                onFileChange={handleFileChange}
+                onSubmit={handleSubmit}
+                onReset={handleReset}
+              />
 
-          {/* Pipeline Stepper - Show during and after loading */}
-          {(loading || pipelineStep !== 'idle') && (
-            <div className="mb-8 animate-fade-in px-4 md:px-6 lg:px-8 max-w-6xl mx-auto w-full">
-              <PipelineStepper activeStep={pipelineStep} />
+              {/* Pipeline Stepper */}
+              {(loading || pipelineStep !== 'idle') && (
+                <PipelineStepper activeStep={pipelineStep} />
+              )}
+
+              {/* Results */}
+              {candidates.length > 0 && (
+                <div style={{ marginTop: 20 }}>
+                  <ModernCandidateResults candidates={candidates} />
+                </div>
+              )}
+
+              {/* Empty State */}
+              {candidates.length === 0 && !loading && !success && (
+                <div className="empty-state">
+                  <div className="empty-icon">🔍</div>
+                  <div className="empty-title">Ready to Find Candidates</div>
+                  <div className="empty-sub">
+                    Paste a job description or upload a PDF to search Zoho Recruit for the best matching profiles.
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Success Message */}
-          {success && !loading && (
-            <div className="mb-8 animate-fade-in p-4 rounded-lg bg-color-success/10 border border-color-success/30 text-color-success flex items-center gap-3 m-auto md:mx-6 lg:m-auto max-w-6xl w-full" style={{margin: 'auto'}}>
-              <span className="text-xl">✨</span>
-              <span className="font-semibold">Found matching candidate profiles!</span>
+          {/* ═══ PAST SEARCHES PAGE ═══ */}
+          {activePage === 'past' && (
+            <div className="placeholder-page animate-fade-in">
+              <div className="placeholder-icon">📋</div>
+              <div className="placeholder-title">Past Searches</div>
+              {history.length === 0 ? (
+                <div className="placeholder-desc">
+                  Your recent sourcing runs will appear here. Run your first search to get started.
+                </div>
+              ) : (
+                <>
+                  <div className="placeholder-desc" style={{ marginBottom: 16 }}>
+                    You have {history.length} recent search{history.length !== 1 ? 'es' : ''}. Click to reload results.
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+                    <button className="ghost-btn" onClick={handleClearHistory} type="button">
+                      🗑 Clear All
+                    </button>
+                  </div>
+                  <div className="history-list">
+                    {history.map((item) => (
+                      <button
+                        key={item.id}
+                        className="history-item"
+                        onClick={() => handleSelectHistory(item)}
+                        type="button"
+                      >
+                        <span className="history-item-icon">
+                          {item.type === 'text' ? '📝' : '📄'}
+                        </span>
+                        <div className="history-item-info">
+                          <div className="history-item-query">
+                            {item.type === 'pdf' ? item.fileName || 'PDF Document' : item.query}
+                          </div>
+                          <div className="history-item-meta">
+                            {formatTime(item.timestamp)}
+                          </div>
+                        </div>
+                        {item.candidatesCount !== undefined && (
+                          <span className="history-item-count">
+                            {item.candidatesCount} results
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
-          {/* Results */}
-          {candidates.length > 0 && (
-            <div className="animate-fade-in px-4 md:px-6 lg:px-8 max-w-6xl mx-auto w-full">
-              <ModernCandidateResults candidates={candidates} />
+          {/* ═══ ANALYTICS PAGE ═══ */}
+          {activePage === 'analytics' && (
+            <div className="placeholder-page animate-fade-in">
+              <div className="placeholder-icon">📊</div>
+              <div className="placeholder-title">Analytics</div>
+              <div className="placeholder-desc">
+                Track sourcing performance, match score trends, and cost efficiency across all your searches.
+              </div>
             </div>
           )}
 
-          {/* Empty State */}
-          {!candidates.length && !loading && !success && (
-            <div className="text-center py-12 animate-fade-in px-4 md:px-6 lg:px-8">
-              <div className="text-6xl mb-4">🎯</div>
-              <h2 className="text-2xl font-bold text-dark-text mb-2">Ready to Find Candidates?</h2>
-              <p className="text-dark-text-secondary max-w-md mx-auto">
-                Enter a job description or upload a PDF to get started with AI-powered candidate matching
-              </p>
+          {/* ═══ SETTINGS PAGE ═══ */}
+          {activePage === 'settings' && (
+            <div className="placeholder-page animate-fade-in">
+              <div className="placeholder-icon">⚙️</div>
+              <div className="placeholder-title">Settings</div>
+              <div className="placeholder-desc">
+                Configure your Zoho Recruit integration, API keys, and sourcing preferences here.
+              </div>
             </div>
           )}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 };
