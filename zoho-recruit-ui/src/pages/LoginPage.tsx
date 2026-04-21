@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import './LoginPage.css';
 
 const DUMMY_USERS = [
-  { email: 'admin@wissen.com', password: 'admin123', name: 'Admin User', role: 'Administrator' },
-  { email: 'recruiter@wissen.com', password: 'recruit123', name: 'Sarah Chen', role: 'Senior Recruiter' },
-  { email: 'demo@wissen.com', password: 'demo123', name: 'Demo User', role: 'Hiring Manager' },
+  { email: 'admin@wissen.com', password: 'admin123', name: 'Tony Stark', role: 'Administrator' },
+  { email: 'recruiter@wissen.com', password: 'recruit123', name: 'Bruce Wayne', role: 'Senior Recruiter' },
+  { email: 'demo@wissen.com', password: 'demo123', name: 'Peter Parker', role: 'Hiring Manager' },
 ];
 
 const LoginPage: React.FC = () => {
@@ -117,10 +117,21 @@ const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="login-brand-footer">
-              <span>Made by </span>
-              <span className="login-gradient-text" style={{ fontWeight: 700 }}>Titan Transformers</span>
-              <span> · Wissen Hackathon 2026</span>
+            <div className="login-brand-footer" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+              <div>
+                <span>Made by </span>
+                <span className="login-gradient-text" style={{ fontWeight: 700 }}>Titan Transformers</span>
+                <span> · Wissen Hackathon 2026</span>
+              </div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', display: 'flex', flexWrap: 'wrap', gap: 6, width: '100%' }}>
+                <span>Sudarshan Garg</span>
+                <span style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>
+                <span>Saurabh Kumar</span>
+                <span style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>
+                <span>Rupam Swain</span>
+                <span style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>
+                <span>Suryaprakash Rao</span>
+              </div>
             </div>
           </div>
         </div>

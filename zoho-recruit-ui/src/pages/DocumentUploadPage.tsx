@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '../store/store';
 import {
@@ -21,6 +21,7 @@ import Sidebar from '../components/Sidebar';
 import ModernInputPanel from '../components/ModernInputPanel';
 import PipelineStepper from '../components/PipelineStepper';
 import ModernCandidateResults from '../components/ModernCandidateResults';
+import Footer from '../components/Footer';
 
 const DUMMY_CANDIDATES = [
   {
@@ -111,6 +112,9 @@ const DocumentUploadPage: React.FC = () => {
 
   const [activePage, setActivePage] = useState('source');
   const [history, setHistory] = useState<SearchHistoryItem[]>([]);
+  const [isFast, setIsFast] = useState(true);
+  // In-memory cache: historyItem.id → CandidateProfile[]
+  const candidateCache = useRef<Map<string, typeof candidates>>(new Map());
   const [sessionStats, setSessionStats] = useState({
     apiCalls: 0,
     candidatesFound: 0,
@@ -152,9 +156,9 @@ const DocumentUploadPage: React.FC = () => {
       setTimeout(() => dispatch(setPipelineStep('search')), 2000);
 
       if (text && !pdfFile) {
-        candidateResults = await candidateService.searchByText(text);
+        candidateResults = await candidateService.searchByText(text, isFast);
       } else if (pdfFile) {
-        candidateResults = await candidateService.searchByDocument(pdfFile, text);
+        candidateResults = await candidateService.searchByDocument(pdfFile, text, isFast);
       } else {
         throw new Error('No input provided');
       }
@@ -163,14 +167,20 @@ const DocumentUploadPage: React.FC = () => {
       dispatch(setSearchResults({ id: searchId, results: candidateResults }));
       dispatch(setCurrentSearchId(searchId));
 
-      // Add to search history
+      // Add to search history and cache candidates
       const historyItem = searchHistoryService.addToHistory({
         query,
         type: pdfFile ? 'pdf' : 'text',
         fileName: pdfFile?.name,
         candidatesCount: candidateResults.length,
       });
+      candidateCache.current.set(historyItem.id, candidateResults);
       localStorage.setItem(`results_${historyItem.id}`, searchId);
+      // Keep cache bounded to last 10
+      if (candidateCache.current.size > 10) {
+        const firstKey = candidateCache.current.keys().next().value;
+        if (firstKey) candidateCache.current.delete(firstKey);
+      }
       setHistory(searchHistoryService.getHistory());
 
       dispatch(setPipelineStep('rank'));
@@ -203,22 +213,32 @@ const DocumentUploadPage: React.FC = () => {
   };
 
   const handleSelectHistory = (item: SearchHistoryItem) => {
-    // Try to load cached results
+    // 1. Check in-memory cache first (fastest — no API or localStorage lookup)
+    const cached = candidateCache.current.get(item.id);
+    if (cached && cached.length > 0) {
+      const searchId = `hist_${item.id}`;
+      dispatch(setSearchResults({ id: searchId, results: cached }));
+      dispatch(setCurrentSearchId(searchId));
+      dispatch(setSuccess(true));
+      dispatch(setError(null));
+      setActivePage('source');
+      return;
+    }
+
+    // 2. Check Redux store via localStorage key
     const resultsId = localStorage.getItem(`results_${item.id}`);
     if (resultsId && searchResults[resultsId]) {
       dispatch(loadSearchResults(resultsId));
       dispatch(setSuccess(true));
       setActivePage('source');
-    } else if (item.type === 'text') {
-      // Re-populate the text field so user can re-run
-      dispatch(setText(item.query));
-      dispatch(setPdfFile(null));
-      setActivePage('source');
-    } else {
-      // PDF was used but file is gone — just show the query
-      dispatch(setText(item.query));
-      setActivePage('source');
+      return;
     }
+
+    // 3. Fallback: pre-fill the query so user can re-run
+    dispatch(setText(item.type === 'text' ? item.query : (item.fileName ? `PDF: ${item.fileName}` : item.query)));
+    dispatch(setPdfFile(null));
+    dispatch(setError('Results expired — please re-run this search.'));
+    setActivePage('source');
   };
 
 
@@ -284,7 +304,7 @@ const DocumentUploadPage: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className="app-wrapper">
       {/* Navbar */}
       <ModernNavbar costEstimate={costEstimate} />
 
@@ -306,10 +326,12 @@ const DocumentUploadPage: React.FC = () => {
                 pdfFile={pdfFile}
                 loading={loading}
                 error={error}
+                isFast={isFast}
                 onTextChange={handleTextChange}
                 onFileChange={handleFileChange}
                 onSubmit={handleSubmit}
                 onReset={handleReset}
+                onToggleFast={setIsFast}
               />
 
               {/* Dummy Data Button */}
@@ -422,6 +444,7 @@ const DocumentUploadPage: React.FC = () => {
               </div>
             </div>
           )}
+          <Footer />
         </main>
       </div>
     </div>

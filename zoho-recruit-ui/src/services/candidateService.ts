@@ -12,21 +12,20 @@ class CandidateService {
    * @param message - Job description text
    * @returns Promise with array of candidate profiles
    */
-  async searchByText(message: string): Promise<CandidateProfile[]> {
+  async searchByText(message: string, fast = true): Promise<CandidateProfile[]> {
     if (!message.trim()) {
       throw new Error('Job description cannot be empty');
     }
 
-    debugLog('Searching candidates by text', { messageLength: message.length });
+    const payload = fast ? `${message}\n\nFind candidates very fast` : message;
+    debugLog('Searching candidates by text', { messageLength: payload.length, fast });
 
     try {
       const url = getApiUrl(config.apiChatEndpoint);
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: payload }),
       });
 
       return this.handleResponse(response);
@@ -41,31 +40,23 @@ class CandidateService {
    * @param message - Optional job description text
    * @returns Promise with array of candidate profiles
    */
-  async searchByDocument(file: File, message?: string): Promise<CandidateProfile[]> {
-    if (!file) {
-      throw new Error('PDF file is required');
-    }
+  async searchByDocument(file: File, message?: string, fast = true): Promise<CandidateProfile[]> {
+    if (!file) throw new Error('PDF file is required');
+    if (file.type !== 'application/pdf') throw new Error('Only PDF files are supported');
 
-    if (file.type !== 'application/pdf') {
-      throw new Error('Only PDF files are supported');
-    }
-
-    debugLog('Searching candidates by document', { fileName: file.name, fileSize: file.size });
+    debugLog('Searching candidates by document', { fileName: file.name, fast });
 
     try {
       const formData = new FormData();
+      const payload = message?.trim()
+        ? fast ? `${message}\n\nFind candidates very fast` : message
+        : fast ? 'Find candidates very fast' : undefined;
 
-      if (message?.trim()) {
-        formData.append('message', message);
-      }
-
+      if (payload) formData.append('message', payload);
       formData.append('pdf', file);
 
       const url = getApiUrl(config.apiDocumentsEndpoint);
-      const response = await fetch(url, {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await fetch(url, { method: 'POST', body: formData });
 
       return this.handleResponse(response);
     } catch (error) {

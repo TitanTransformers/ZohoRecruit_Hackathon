@@ -70,10 +70,12 @@ interface ModernInputPanelProps {
   pdfFile: File | null;
   loading: boolean;
   error: string | null;
+  isFast: boolean;
   onTextChange: (text: string) => void;
   onFileChange: (file: File | null) => void;
   onSubmit: () => void;
   onReset: () => void;
+  onToggleFast: (fast: boolean) => void;
   maxTextLength?: number;
 }
 
@@ -82,10 +84,12 @@ const ModernInputPanel: React.FC<ModernInputPanelProps> = ({
   pdfFile,
   loading,
   error,
+  isFast,
   onTextChange,
   onFileChange,
   onSubmit,
   onReset,
+  onToggleFast,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -156,15 +160,63 @@ const ModernInputPanel: React.FC<ModernInputPanelProps> = ({
           </div>
         </div>
 
-        <button
-          className="submit-btn"
-          onClick={onSubmit}
-          disabled={loading || !hasInput}
-          type="button"
-        >
-          {loading && <div className="btn-spinner" />}
-          <span>{loading ? 'Searching Zoho Recruit...' : '⚡ Find Best Candidates'}</span>
-        </button>
+        {/* Speed toggle + Submit */}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 16 }}>
+          {/* Fast / Normal pill toggle */}
+          <div style={{
+            display: 'flex',
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border)',
+            borderRadius: 10,
+            padding: 3,
+            gap: 2,
+            flexShrink: 0,
+          }}>
+            <button
+              type="button"
+              onClick={() => onToggleFast(true)}
+              style={{
+                padding: '5px 12px',
+                borderRadius: 7,
+                border: 'none',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all .15s',
+                background: isFast ? 'var(--accent-purple)' : 'transparent',
+                color: isFast ? '#fff' : 'var(--text-muted)',
+                fontFamily: 'inherit',
+              }}
+            >⚡ Fast</button>
+            <button
+              type="button"
+              onClick={() => onToggleFast(false)}
+              style={{
+                padding: '5px 12px',
+                borderRadius: 7,
+                border: 'none',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all .15s',
+                background: !isFast ? 'var(--bg-surface)' : 'transparent',
+                color: !isFast ? 'var(--text-primary)' : 'var(--text-muted)',
+                fontFamily: 'inherit',
+              }}
+            >🐢 Normal</button>
+          </div>
+
+          <button
+            className="submit-btn"
+            onClick={onSubmit}
+            disabled={loading || !hasInput}
+            type="button"
+            style={{ flex: 1, marginTop: 0 }}
+          >
+            {loading && <div className="btn-spinner" />}
+            <span>{loading ? 'Searching Zoho Recruit...' : '⚡ Find Best Candidates'}</span>
+          </button>
+        </div>
       </div>
 
       {error && (

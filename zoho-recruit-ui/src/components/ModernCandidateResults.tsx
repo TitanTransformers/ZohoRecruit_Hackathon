@@ -68,35 +68,31 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, index }) => {
   return (
     <div className="candidate-card" style={{ animationDelay: `${index * 60}ms` }}>
 
-      {/* ── Rank badge ── */}
-      {candidate.rankPosition != null && (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          marginBottom: 12,
-        }}>
-          <span style={{
-            fontSize: 11, fontWeight: 700, color: 'var(--accent-purple)',
-            background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.25)',
-            borderRadius: 6, padding: '2px 8px', letterSpacing: '.3px',
-          }}>
-            #{candidate.rankPosition}
-          </span>
-          {candidate.candidateId && candidate.candidateId !== 'N/A' && (
-            <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>
-              {candidate.candidateId}
-            </span>
-          )}
-        </div>
-      )}
-
       {/* ── Top: avatar + info + ring ── */}
       <div className="card-top">
         <div className="avatar" style={{ background: grad }}>{initials}</div>
         <div className="card-info">
           <div className="card-name">{candidate.name}</div>
+
+          {/* Rank + CandidateId inline below name */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' as const }}>
+            {candidate.rankPosition != null && (
+              <span style={{
+                fontSize: 10, fontWeight: 700, color: 'var(--accent-purple)',
+                background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.25)',
+                borderRadius: 5, padding: '1px 6px', letterSpacing: '.2px',
+              }}>#{candidate.rankPosition}</span>
+            )}
+            {candidate.candidateId && candidate.candidateId !== 'N/A' && (
+              <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                {candidate.candidateId}
+              </span>
+            )}
+          </div>
+
           {/* matchReasoning as subtitle */}
           {candidate.matchReasoning && (
-            <div className="card-role" title={candidate.matchReasoning}>
+            <div className="card-role" title={candidate.matchReasoning} style={{ marginTop: 3 }}>
               {candidate.matchReasoning.substring(0, 48)}{candidate.matchReasoning.length > 48 ? '…' : ''}
             </div>
           )}
