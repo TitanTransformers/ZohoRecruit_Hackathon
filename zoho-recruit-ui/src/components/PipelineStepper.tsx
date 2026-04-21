@@ -21,10 +21,10 @@ const stepOrder: Record<string, number> = {
 };
 
 const PIPELINE_LOGS: Record<string, string> = {
-  parse: '🧠 Parsing JD... extracted 8 required skills, 4 preferred',
-  query: '🔍 Generated 3 search strategies (precision / balanced / recall)',
-  search: '📡 Searching Zoho Recruit... found 47 candidates across 3 pages',
-  rank: '✅ Complete · 5 strong fits · 3 possible · cost: $0.018',
+  parse: '🧠 Parsing JD...',
+  query: '🔍 Generated search strategies',
+  search: '📡 Searching Zoho Recruit...',
+  rank: '✅ Completed',
 };
 
 const CheckSvg: React.FC<{ index: number }> = ({ index }) => (

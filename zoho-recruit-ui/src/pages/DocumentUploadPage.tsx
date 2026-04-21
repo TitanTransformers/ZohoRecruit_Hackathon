@@ -22,6 +22,79 @@ import ModernInputPanel from '../components/ModernInputPanel';
 import PipelineStepper from '../components/PipelineStepper';
 import ModernCandidateResults from '../components/ModernCandidateResults';
 
+const DUMMY_CANDIDATES = [
+  {
+    candidateId: "ZR_001",
+    name: "Aarav Sharma",
+    email: "aarav.sharma@example.com",
+    mobile: "9876543210",
+    matchPercentage: 92,
+    skillMatchPercentage: 95,
+    experienceMatchPercentage: 90,
+    rankPosition: 1,
+    matchedSkills: ["React", "TypeScript", "Node.js", "Redux", "CSS"],
+    missingSkills: ["GraphQL"],
+    fitAnalysis: "Excellent fit for the frontend role with strong React and TypeScript experience.",
+    matchReasoning: "Strong background in React ecosystem. Missing GraphQL but has extensive REST API experience."
+  },
+  {
+    candidateId: "ZR_002",
+    name: "Priya Patel",
+    email: "priya.p@example.com",
+    mobile: "9876543211",
+    matchPercentage: 85,
+    skillMatchPercentage: 80,
+    experienceMatchPercentage: 95,
+    rankPosition: 2,
+    matchedSkills: ["React", "JavaScript", "HTML", "CSS"],
+    missingSkills: ["TypeScript", "Node.js", "Redux"],
+    fitAnalysis: "Good experience but lacking some modern tools like TypeScript.",
+    matchReasoning: "Solid core frontend skills. Will need training on TypeScript."
+  },
+  {
+    candidateId: "ZR_003",
+    name: "Rohan Gupta",
+    email: "rohan.gupta@example.com",
+    mobile: "9876543212",
+    matchPercentage: 75,
+    skillMatchPercentage: 70,
+    experienceMatchPercentage: 80,
+    rankPosition: 3,
+    matchedSkills: ["Node.js", "Express", "MongoDB"],
+    missingSkills: ["React", "TypeScript", "Frontend"],
+    fitAnalysis: "More of a backend developer. Might struggle with complex UI tasks.",
+    matchReasoning: "Primarily backend focused. Missing core frontend requirements."
+  },
+  {
+    candidateId: "ZR_004",
+    name: "Neha Singh",
+    email: "neha.s@example.com",
+    mobile: "9876543213",
+    matchPercentage: 62,
+    skillMatchPercentage: 60,
+    experienceMatchPercentage: 65,
+    rankPosition: 4,
+    matchedSkills: ["HTML", "CSS", "JavaScript"],
+    missingSkills: ["React", "TypeScript", "Node.js", "Redux", "Webpack"],
+    fitAnalysis: "Junior candidate. Good for basic tasks but lacks advanced framework knowledge.",
+    matchReasoning: "Entry level skills. Missing all advanced framework requirements."
+  },
+  {
+    candidateId: "ZR_005",
+    name: "Vikram Verma",
+    email: "vikram.v@example.com",
+    mobile: "9876543214",
+    matchPercentage: 45,
+    skillMatchPercentage: 40,
+    experienceMatchPercentage: 50,
+    rankPosition: 5,
+    matchedSkills: ["Python", "Django"],
+    missingSkills: ["React", "TypeScript", "Node.js", "JavaScript", "HTML", "CSS"],
+    fitAnalysis: "Wrong tech stack. Primarily a Python developer.",
+    matchReasoning: "Backend Python developer. Does not match frontend requirements."
+  }
+];
+
 const DocumentUploadPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const {
@@ -164,6 +237,40 @@ const DocumentUploadPage: React.FC = () => {
     dispatch(setPipelineStep('idle'));
   };
 
+  const loadDummyData = () => {
+    dispatch(setError(null));
+    dispatch(setSuccess(false));
+    dispatch(setPipelineStep('parse'));
+    dispatch(setLoading(true));
+    
+    setTimeout(() => {
+      dispatch(setPipelineStep('query'));
+      setTimeout(() => {
+         dispatch(setPipelineStep('search'));
+         setTimeout(() => {
+           const searchId = 'dummy-search-' + Date.now();
+           dispatch(setSearchResults({ id: searchId, results: DUMMY_CANDIDATES as any }));
+           dispatch(setCurrentSearchId(searchId));
+           dispatch(setPipelineStep('rank'));
+           dispatch(setSuccess(true));
+           dispatch(setCostEstimate(0.15));
+           setSessionStats(prev => ({
+              ...prev,
+              apiCalls: prev.apiCalls + 3,
+              candidatesFound: prev.candidatesFound + 5,
+              avgMatch: '71%',
+              totalCost: `$${(parseFloat(prev.totalCost.replace('$', '')) + 0.15).toFixed(3)}`,
+           }));
+           setTimeout(() => {
+             dispatch(setPipelineStep('idle'));
+             dispatch(setLoading(false));
+           }, 1500);
+         }, 1000)
+      }, 1000)
+    }, 1000);
+  };
+
+
   const formatTime = (timestamp: number) => {
     const diff = Date.now() - timestamp;
     const mins = Math.floor(diff / 60000);
@@ -204,6 +311,19 @@ const DocumentUploadPage: React.FC = () => {
                 onSubmit={handleSubmit}
                 onReset={handleReset}
               />
+
+              {/* Dummy Data Button */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10, marginBottom: 15, paddingRight: 20 }}>
+                <button 
+                  className="ghost-btn" 
+                  onClick={loadDummyData} 
+                  type="button"
+                  style={{ fontSize: 12, color: 'var(--text-muted)' }}
+                  disabled={loading}
+                >
+                  🧪 Load Dummy Data
+                </button>
+              </div>
 
               {/* Pipeline Stepper */}
               {(loading || pipelineStep !== 'idle') && (

@@ -1,17 +1,64 @@
 import React, { useRef } from 'react';
 
 const SAMPLE_JDS: Record<string, string> = {
-  java: `Senior Java Developer — 6-10 years experience.
-Required: Java, Spring Boot, Microservices, Kafka, AWS, REST APIs.
-Preferred: Docker, Kubernetes, Redis, BFSI domain.
-Location: Bangalore. Hybrid work.
-Responsibilities: Design and build distributed backend systems for capital markets platform.`,
+  java: `Fetch top 5 candidates for below Job Description 
+
+Wissen Technology is hiring a seasoned Java Developer to join our high-performing engineering team. This role demands strong technical expertise, ownership, and a passion for building scalable enterprise-grade applications from the ground up.
+
+Experience: 5+ years  
+Location: Bangalore
+
+Key Responsibilities
+
+• Experience in scalable Java applications.
+
+• Collaborate with cross-functional teams to define, design, and deliver new features.
+
+• Solve complex technical problems with innovative, simple solutions.
+
+• Write clean, efficient, and well-documented code.
+
+• Participate in code reviews to maintain code quality.
+
+• Continuously discover, evaluate, and implement new technologies to maximize development efficiency.
+
+• Exhibit ownership and responsibility for assigned deliverables.
+
+Qualifications and Required Skills
+
+• 5+ years of hands-on Java development experience.
+
+• Strong experience in building products or applications from scratch (not just maintenance/support).
+
+• Good understanding of object-oriented programming principles.
+
+• Strong knowledge of data structures, algorithms, and design patterns.
+
+• Should have strong problem-solving abilities.
+
+• Familiarity with RESTful APIs and microservices architecture is a plus.
+
+• Strong debugging and troubleshooting skills.
+
+Good to Have Skills
+
+• Excellent problem-solving skills and logical reasoning.
+
+• High levels of ownership, accountability, and self-drive.
+
+• Strong communication skills and a collaborative approach.
+
+• Proactive attitude and high standard of work ethics.
+
+• Evidence of recognitions or awards in previous roles.
+
+• Commitment to continuous learning and improvement.`,
   data: `Senior Data Engineer — 5-8 years experience.
 Required: Python, Apache Spark, Airflow, SQL, Snowflake, dbt.
 Preferred: Databricks, AWS Glue, Kafka, Scala.
 Location: Hyderabad / Remote.
 Responsibilities: Build and maintain scalable data pipelines.`,
-  devops: `DevOps Lead — 7-12 years experience.
+  devops: `DevOps Lead — 17-12 years experience.
 Required: Kubernetes, Terraform, Jenkins, AWS/GCP, Docker, Helm.
 Preferred: ArgoCD, Prometheus, Grafana, Python scripting, SRE practices.
 Location: Pune. On-site preferred.

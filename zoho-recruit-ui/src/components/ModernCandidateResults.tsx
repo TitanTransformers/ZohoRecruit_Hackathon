@@ -45,13 +45,8 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, index }) => {
     }
   }, [targetOffset, index]);
 
-  // Skills display
-  const maxMatch = 4;
-  const maxMiss = 2;
-  const matchedSkills = (candidate.matchedSkills || []).slice(0, maxMatch);
-  const missingSkills = (candidate.missingSkills || []).slice(0, maxMiss);
-  const overflow = Math.max(0, (candidate.matchedSkills?.length || 0) - maxMatch) +
-                   Math.max(0, (candidate.missingSkills?.length || 0) - maxMiss);
+  // Phone: prefer mobile (new API), fallback to phone (legacy)
+  const phoneNumber = candidate.mobile || candidate.phone;
 
   const copyText = async (text: string, field: string) => {
     try {
@@ -61,24 +56,49 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, index }) => {
     } catch { /* ignore */ }
   };
 
-  // Derive role from matchReasoning or use a placeholder
-  const role = candidate.matchReasoning
-    ? candidate.matchReasoning.split('.')[0].substring(0, 40)
-    : 'Software Engineer';
+  // All matched/missing skills (no truncation — shown in expanded)
+  const allMatchedSkills = candidate.matchedSkills || [];
+  const allMissingSkills = candidate.missingSkills || [];
+
+  // In collapsed view show limited skills
+  const previewMatched = allMatchedSkills.slice(0, 4);
+  const previewMissing = allMissingSkills.slice(0, 2);
+  const hiddenCount = Math.max(0, allMatchedSkills.length - 4) + Math.max(0, allMissingSkills.length - 2);
 
   return (
-    <div
-      className="candidate-card"
-      style={{ animationDelay: `${index * 60}ms` }}
-    >
-      {/* Top section: avatar + info + ring */}
+    <div className="candidate-card" style={{ animationDelay: `${index * 60}ms` }}>
+
+      {/* ── Rank badge ── */}
+      {candidate.rankPosition != null && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          marginBottom: 12,
+        }}>
+          <span style={{
+            fontSize: 11, fontWeight: 700, color: 'var(--accent-purple)',
+            background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.25)',
+            borderRadius: 6, padding: '2px 8px', letterSpacing: '.3px',
+          }}>
+            #{candidate.rankPosition}
+          </span>
+          {candidate.candidateId && candidate.candidateId !== 'N/A' && (
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+              {candidate.candidateId}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* ── Top: avatar + info + ring ── */}
       <div className="card-top">
         <div className="avatar" style={{ background: grad }}>{initials}</div>
         <div className="card-info">
           <div className="card-name">{candidate.name}</div>
-          <div className="card-role">{role}</div>
-          {candidate.candidateId && (
-            <div className="card-company">{candidate.candidateId}</div>
+          {/* matchReasoning as subtitle */}
+          {candidate.matchReasoning && (
+            <div className="card-role" title={candidate.matchReasoning}>
+              {candidate.matchReasoning.substring(0, 48)}{candidate.matchReasoning.length > 48 ? '…' : ''}
+            </div>
           )}
         </div>
         <div className="match-ring-wrap">
@@ -103,75 +123,165 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, index }) => {
         </div>
       </div>
 
-      {/* Skills */}
+      {/* ── Skill/Experience sub-scores ── */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' as const }}>
+        {candidate.skillMatchPercentage != null && (
+          <span style={{
+            fontSize: 11, color: 'var(--text-secondary)',
+            background: 'var(--bg-elevated)', borderRadius: 6,
+            padding: '3px 8px', border: '1px solid var(--border)',
+          }}>
+            🎯 Skill <strong style={{ color: '#10B981' }}>{candidate.skillMatchPercentage}%</strong>
+          </span>
+        )}
+        {candidate.experienceMatchPercentage != null && (
+          <span style={{
+            fontSize: 11, color: 'var(--text-secondary)',
+            background: 'var(--bg-elevated)', borderRadius: 6,
+            padding: '3px 8px', border: '1px solid var(--border)',
+          }}>
+            📅 Exp <strong style={{ color: '#3B82F6' }}>{candidate.experienceMatchPercentage}%</strong>
+          </span>
+        )}
+      </div>
+
+      {/* ── Collapsed skills preview ── */}
       <div className="skills-row">
-        {matchedSkills.map((s, i) => (
-          <span key={`m-${i}`} className="skill-tag skill-match">{s}</span>
+        {previewMatched.map((s, i) => (
+          <span key={`m-${i}`} className="skill-tag skill-match">✓ {s}</span>
         ))}
-        {missingSkills.map((s, i) => (
+        {previewMissing.map((s, i) => (
           <span key={`x-${i}`} className="skill-tag skill-miss">✕ {s}</span>
         ))}
-        {overflow > 0 && (
+        {hiddenCount > 0 && (
           <span className="skill-tag" style={{
             background: 'var(--bg-elevated)',
             border: '1px solid var(--border)',
             color: 'var(--text-muted)',
-          }}>+{overflow} more</span>
+          }}>+{hiddenCount} more</span>
         )}
       </div>
 
-      {/* Contact */}
+      {/* ── Contact ── */}
       <div className="contact-row">
-        <button
-          className="contact-item"
-          onClick={() => copyText(candidate.email, 'email')}
-          type="button"
-        >
-          <span>📧</span>
-          <span>{candidate.email}</span>
-          <span className={`tooltip-copied ${copiedField === 'email' ? 'show' : ''}`}>Copied!</span>
-        </button>
-        {candidate.phone && (
+        {candidate.email && candidate.email !== 'N/A' && (
           <button
             className="contact-item"
-            onClick={() => copyText(candidate.phone!, 'phone')}
+            onClick={() => copyText(candidate.email, 'email')}
+            type="button"
+          >
+            <span>📧</span>
+            <span>{candidate.email}</span>
+            <span className={`tooltip-copied ${copiedField === 'email' ? 'show' : ''}`}>Copied!</span>
+          </button>
+        )}
+        {phoneNumber && phoneNumber !== 'N/A' && (
+          <button
+            className="contact-item"
+            onClick={() => copyText(phoneNumber, 'phone')}
             type="button"
           >
             <span>📞</span>
-            <span>{candidate.phone}</span>
+            <span>{phoneNumber}</span>
             <span className={`tooltip-copied ${copiedField === 'phone' ? 'show' : ''}`}>Copied!</span>
           </button>
         )}
       </div>
 
-      {/* Expand toggle */}
+      {/* ── Expand toggle ── */}
       <button
         className="expand-toggle"
         onClick={() => setIsExpanded(!isExpanded)}
         type="button"
       >
         <span>{isExpanded ? '▴' : '▾'}</span>
-        {isExpanded ? ' Hide fit summary' : ' View fit summary'}
+        {isExpanded ? ' Hide details' : ' View full analysis'}
       </button>
 
-      {/* Expanded content */}
+      {/* ── Expanded content ── */}
       {isExpanded && (
         <div className="expand-content animate-fade-in-up">
+
+          {/* fitAnalysis */}
           {candidate.fitAnalysis && (
-            <p className="fit-summary">"{candidate.fitAnalysis}"</p>
+            <div style={{ marginBottom: 14 }}>
+              <div style={{
+                fontSize: 11, fontWeight: 600, textTransform: 'uppercase' as const,
+                letterSpacing: '.8px', color: 'var(--text-muted)', marginBottom: 6,
+              }}>
+                Fit Analysis
+              </div>
+              <p className="fit-summary">"{candidate.fitAnalysis}"</p>
+            </div>
           )}
+
+          {/* matchReasoning */}
+          {candidate.matchReasoning && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{
+                fontSize: 11, fontWeight: 600, textTransform: 'uppercase' as const,
+                letterSpacing: '.8px', color: 'var(--text-muted)', marginBottom: 6,
+              }}>
+                Match Reasoning
+              </div>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                {candidate.matchReasoning}
+              </p>
+            </div>
+          )}
+
+          {/* All matched skills */}
+          {allMatchedSkills.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{
+                fontSize: 11, fontWeight: 600, textTransform: 'uppercase' as const,
+                letterSpacing: '.8px', color: 'var(--text-muted)', marginBottom: 6,
+              }}>
+                Matched Skills ({allMatchedSkills.length})
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
+                {allMatchedSkills.map((s, i) => (
+                  <span key={i} className="skill-tag skill-match">✓ {s}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* All missing skills */}
+          {allMissingSkills.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{
+                fontSize: 11, fontWeight: 600, textTransform: 'uppercase' as const,
+                letterSpacing: '.8px', color: 'var(--text-muted)', marginBottom: 6,
+              }}>
+                Missing Skills ({allMissingSkills.length})
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
+                {allMissingSkills.map((s, i) => (
+                  <span key={i} className="skill-tag skill-miss">✕ {s}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Score breakdown */}
           <div className="expand-meta">
-            {candidate.skillMatchPercentage !== undefined && (
+            {candidate.matchPercentage != null && (
+              <div className="expand-meta-item">
+                Overall Match: <span>{candidate.matchPercentage}%</span>
+              </div>
+            )}
+            {candidate.skillMatchPercentage != null && (
               <div className="expand-meta-item">
                 Skill Match: <span>{candidate.skillMatchPercentage}%</span>
               </div>
             )}
-            {candidate.experienceMatchPercentage !== undefined && (
+            {candidate.experienceMatchPercentage != null && (
               <div className="expand-meta-item">
-                Experience Match: <span>{candidate.experienceMatchPercentage}%</span>
+                Experience: <span>{candidate.experienceMatchPercentage}%</span>
               </div>
             )}
-            {candidate.rankPosition !== undefined && (
+            {candidate.rankPosition != null && (
               <div className="expand-meta-item">
                 Rank: <span>#{candidate.rankPosition}</span>
               </div>
@@ -212,13 +322,19 @@ const ModernCandidateResults: React.FC<ModernCandidateResultsProps> = ({ candida
   };
 
   const exportCSV = () => {
-    const headers = ['Name', 'Email', 'Phone', 'Match%', 'Fit', 'Matched Skills', 'Missing Skills'];
+    const headers = ['Rank', 'Name', 'Email', 'Mobile', 'Match%', 'Skill%', 'Exp%', 'Fit', 'Matched Skills', 'Missing Skills', 'Fit Analysis'];
     const rows = candidates.map(c => [
-      c.name, c.email, c.phone || '',
+      c.rankPosition ?? '',
+      c.name,
+      c.email,
+      c.mobile || c.phone || '',
       `${c.matchPercentage ?? 0}%`,
+      `${c.skillMatchPercentage ?? 0}%`,
+      `${c.experienceMatchPercentage ?? 0}%`,
       (c.matchPercentage ?? 0) >= 80 ? 'Strong' : (c.matchPercentage ?? 0) >= 60 ? 'Possible' : 'Weak',
       (c.matchedSkills || []).join(';'),
       (c.missingSkills || []).join(';'),
+      (c.fitAnalysis || '').replace(/,/g, ' '),
     ]);
     const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -228,13 +344,23 @@ const ModernCandidateResults: React.FC<ModernCandidateResultsProps> = ({ candida
     a.click();
   };
 
+  // Summary stats
+  const strongCount = candidates.filter(c => (c.matchPercentage ?? 0) >= 80).length;
+  const possibleCount = candidates.filter(c => { const p = c.matchPercentage ?? 0; return p >= 60 && p < 80; }).length;
+
   return (
     <div>
       {/* Header */}
       <div className="results-header">
         <div>
-          <h2 className="results-title">{candidates.length} Candidates Found</h2>
-          <p className="results-subtitle">Ranked by AI match score</p>
+          <h2 className="results-title">{candidates.length} Candidates Ranked</h2>
+          <p className="results-subtitle">
+            <span style={{ color: '#10B981', fontWeight: 600 }}>{strongCount} strong</span>
+            {' · '}
+            <span style={{ color: '#F59E0B', fontWeight: 600 }}>{possibleCount} possible</span>
+            {' · '}
+            {candidates.length - strongCount - possibleCount} weak fits
+          </p>
         </div>
         <div className="results-actions">
           <button className="ghost-btn" onClick={exportJSON} type="button">↓ Export JSON</button>
@@ -245,9 +371,9 @@ const ModernCandidateResults: React.FC<ModernCandidateResultsProps> = ({ candida
             onChange={(e) => setFilter(e.target.value)}
           >
             <option value="all">All Candidates</option>
-            <option value="strong">Strong Fit</option>
-            <option value="possible">Possible Fit</option>
-            <option value="weak">Weak Fit</option>
+            <option value="strong">Strong Fit (≥80%)</option>
+            <option value="possible">Possible Fit (60–79%)</option>
+            <option value="weak">Weak Fit (&lt;60%)</option>
           </select>
         </div>
       </div>
