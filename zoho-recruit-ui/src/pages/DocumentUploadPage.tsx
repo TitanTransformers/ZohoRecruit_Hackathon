@@ -148,11 +148,7 @@ const DocumentUploadPage: React.FC = () => {
     }
   };
 
-  const handleDeleteHistory = (id: string) => {
-    searchHistoryService.deleteFromHistory(id);
-    localStorage.removeItem(`results_${id}`);
-    setHistory(searchHistoryService.getHistory());
-  };
+
 
   const handleClearHistory = () => {
     searchHistoryService.clearHistory();
