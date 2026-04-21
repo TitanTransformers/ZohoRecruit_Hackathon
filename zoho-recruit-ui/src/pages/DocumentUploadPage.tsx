@@ -106,7 +106,6 @@ const DocumentUploadPage: React.FC = () => {
     success,
     candidates,
     pipelineStep,
-    costEstimate,
     searchResults,
   } = useSelector((state: RootState) => state.document);
 
@@ -306,7 +305,7 @@ const DocumentUploadPage: React.FC = () => {
   return (
     <div className="app-wrapper">
       {/* Navbar */}
-      <ModernNavbar costEstimate={costEstimate} />
+      <ModernNavbar />
 
       {/* Layout: Sidebar + Main */}
       <div className="app-layout">
