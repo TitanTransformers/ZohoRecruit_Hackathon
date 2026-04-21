@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: mcp-client
+  ai:
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY}
+      model:
+        name: claude-3-5-haiku-20241022 # Claude Haiku model for fast processing
+      chat:
+        options:
+          max-tokens: 8192                          # Sufficient for JSON array responses
+          temperature: 0.0
+    mcp:
+      client:
+        type: sync
+        request-timeout: 300s                        # 5 minutes
+        streamable-http:
+          connections:
+            my-mcp-server:
+              url: ${MCP_SERVER_URL:http://localhost:8080/mcp}
+
+logging:
+  level:
+    root: INFO
+    com.mcp.mcp_client: DEBUG
+    org.springframework.ai: DEBUG
+
+server:
+  port: ${PORT:8081}
+
