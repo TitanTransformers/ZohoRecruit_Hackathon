@@ -262,6 +262,16 @@ public class RecruitmentTools {
         if (jd.getExperienceLevel() != null && !jd.getExperienceLevel().isBlank()) {
             criteria.put("experience_level", jd.getExperienceLevel());
         }
+        // NEW: Add minimum years of experience constraint
+        if (jd.getMinYearsOfExperience() != null) {
+            criteria.put("min_experience_years", String.valueOf(jd.getMinYearsOfExperience()));
+            log.debug("Added min experience constraint: {} years", jd.getMinYearsOfExperience());
+        }
+        // NEW: Add maximum years of experience constraint
+        if (jd.getMaxYearsOfExperience() != null) {
+            criteria.put("max_experience_years", String.valueOf(jd.getMaxYearsOfExperience()));
+            log.debug("Added max experience constraint: {} years", jd.getMaxYearsOfExperience());
+        }
         if (jd.getLocation() != null && !jd.getLocation().isBlank()) {
             criteria.put("location", jd.getLocation());
         }

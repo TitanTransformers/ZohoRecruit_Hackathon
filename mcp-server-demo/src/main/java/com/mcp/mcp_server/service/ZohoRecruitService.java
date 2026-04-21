@@ -60,8 +60,10 @@ public class ZohoRecruitService {
      * - Only valid field names from ZohoRecruitCandidateSearchField are used
      * - Correct operators for each field type
      * - Numeric fields don't use string operators
+     * - Experience range (min/max) is properly applied with BOTH lower and upper bounds
      *
      * @param searchCriteria Map with keys: skills, experience_years, location, status, etc.
+     *                       Also supports: min_experience_years, max_experience_years
      * @return Valid Zoho Recruit criteria string
      */
     private String buildCriteriaStringUsingBuilder(Map<String, String> searchCriteria) {
@@ -96,6 +98,30 @@ public class ZohoRecruitService {
                             filter.addExperience(Integer.parseInt(value));
                         } catch (NumberFormatException e) {
                             log.warn("Invalid experience value (must be numeric): {}. Skipping.", value);
+                        }
+                    }
+
+                    // NEW: Handle experience range - minimum years
+                    case "min_experience_years", "min_years_of_experience", "min_experience" -> {
+                        try {
+                            Integer minYears = Integer.parseInt(value);
+                            log.debug("Adding min experience constraint: {} years", minYears);
+                            filter.addCondition(ZohoRecruitCandidateSearchField.EXPERIENCE_IN_YEARS,
+                                    ZohoCriteriaBuilder.Operator.GREATER_EQUAL, minYears);
+                        } catch (NumberFormatException e) {
+                            log.warn("Invalid min experience value (must be numeric): {}. Skipping.", value);
+                        }
+                    }
+
+                    // NEW: Handle experience range - maximum years
+                    case "max_experience_years", "max_years_of_experience", "max_experience" -> {
+                        try {
+                            Integer maxYears = Integer.parseInt(value);
+                            log.debug("Adding max experience constraint: {} years", maxYears);
+                            filter.addCondition(ZohoRecruitCandidateSearchField.EXPERIENCE_IN_YEARS,
+                                    ZohoCriteriaBuilder.Operator.LESS_EQUAL, maxYears);
+                        } catch (NumberFormatException e) {
+                            log.warn("Invalid max experience value (must be numeric): {}. Skipping.", value);
                         }
                     }
 

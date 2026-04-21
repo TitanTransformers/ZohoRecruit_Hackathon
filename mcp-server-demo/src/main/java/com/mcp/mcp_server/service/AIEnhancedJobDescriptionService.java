@@ -60,7 +60,8 @@ public class AIEnhancedJobDescriptionService {
                 {
                   "jobTitle": "extracted job title or designation",
                   "experienceLevel": "Junior/Mid/Senior/Executive",
-                  "yearsOfExperience": number or null,
+                  "minYearsOfExperience": number or null,
+                  "maxYearsOfExperience": number or null,
                   "requiredSkills": ["skill1", "skill2", "skill3", ...],
                   "preferredSkills": ["skill1", "skill2", ...],
                   "qualifications": ["qualification1", "qualification2", ...],
@@ -74,11 +75,18 @@ public class AIEnhancedJobDescriptionService {
                   "salaryRange": "salary range if mentioned or null"
                 }
 
+                IMPORTANT - Experience Range Extraction:
+                - Extract BOTH minimum and maximum years if a range is specified (e.g., "5-10 years" → min: 5, max: 10)
+                - If only one number is given with "years", use it as BOTH min and max
+                - If experience level is given (Junior/Mid/Senior), map it: Junior=0, Mid=3, Senior=7, Lead=10
+                - Priority: Explicit year range > Explicit single year > Experience level
+
                 Be comprehensive and extract all relevant skills, requirements, and benefits mentioned.
                 Mapping Guide:
                 - jobTitle → Current_Job_Title (Zoho field)
-                - experienceLevel → Experience_in_Years (converted: Junior=0, Mid=3, Senior=7, Lead=10)
-                - yearsOfExperience → Experience_in_Years (Zoho field)
+                - experienceLevel → Experience level category (Zoho field)
+                - minYearsOfExperience → Minimum Experience_in_Years (Zoho field)
+                - maxYearsOfExperience → Maximum Experience_in_Years (Zoho field)
                 - requiredSkills → Skill_Set (Zoho field)
                 - preferredSkills → Skill_Set (Zoho field)
                 - qualifications → Highest_Qualification_Held (Zoho field)
