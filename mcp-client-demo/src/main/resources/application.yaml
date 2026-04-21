@@ -10,6 +10,9 @@ spring:
         options:
           max-tokens: 8192                          # Sufficient for JSON array responses
           temperature: 0.0
+      # Add timeout and retry configuration
+      timeout: 60s                                   # Connection timeout
+      connect-timeout: 30s                           # Connection establishment timeout
     mcp:
       client:
         type: sync
@@ -18,6 +21,8 @@ spring:
           connections:
             my-mcp-server:
               url: ${MCP_SERVER_URL:http://localhost:8080/mcp}
+              connect-timeout: 30s
+              read-timeout: 60s
 
 logging:
   level:
@@ -27,4 +32,14 @@ logging:
 
 server:
   port: ${PORT:8081}
+
+# Additional resilience settings
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
 

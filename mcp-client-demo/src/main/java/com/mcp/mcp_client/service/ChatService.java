@@ -40,62 +40,93 @@ public class ChatService {
      *
      * OPTIMIZATION: Get raw text content and extract JSON directly instead of
      * using Spring's entity deserialization (which was taking 145+ seconds)
+     *
+     * Includes retry logic for transient failures.
      */
     public List<RankedCandidate> chat(ChatRequest chatRequest) {
+        int maxRetries = 3;
+        int retryCount = 0;
         long totalStart = System.currentTimeMillis();
         logger.info("Processing chat message: {}", chatRequest.getMessage());
 
-        try {
-            long pageExtractStart = System.currentTimeMillis();
-            int requestPageSize = extractPageSizeFromPrompt(chatRequest.getMessage());
-            if (requestPageSize <= 0) {
-                requestPageSize = chatRequest.getPageSize() > 0 ? chatRequest.getPageSize() : 10;
-            }
-            long pageExtractTime = System.currentTimeMillis() - pageExtractStart;
-            logger.info("Resolved page size: {} from user prompt (took {} ms)", requestPageSize, pageExtractTime);
+        while (retryCount < maxRetries) {
+            try {
+                long pageExtractStart = System.currentTimeMillis();
+                int requestPageSize = extractPageSizeFromPrompt(chatRequest.getMessage());
+                if (requestPageSize <= 0) {
+                    requestPageSize = chatRequest.getPageSize() > 0 ? chatRequest.getPageSize() : 10;
+                }
+                long pageExtractTime = System.currentTimeMillis() - pageExtractStart;
+                logger.info("Resolved page size: {} from user prompt (took {} ms)", requestPageSize, pageExtractTime);
 
-            long promptBuildStart = System.currentTimeMillis();
-            var prompt = chatClient.prompt()
-                    .system("INSTRUCTIONS: You MUST output the exact raw JSON array from the MCP tool result. " +
-                            "Do NOT reformat, analyze, explain, or modify it in any way. " +
-                            "Output ONLY the JSON array. No prefix. No suffix. No explanation. " +
-                            "Preserve exact formatting and content from the tool.")
-                    .user(chatRequest.getMessage() + " Limit to " + requestPageSize + " results.");
-            long promptBuildTime = System.currentTimeMillis() - promptBuildStart;
-            logger.info("Prompt building took {} ms", promptBuildTime);
+                long promptBuildStart = System.currentTimeMillis();
+                var prompt = chatClient.prompt()
+                        .system("INSTRUCTIONS: You MUST output the exact raw JSON array from the MCP tool result. " +
+                                "Do NOT reformat, analyze, explain, or modify it in any way. " +
+                                "Output ONLY the JSON array. No prefix. No suffix. No explanation. " +
+                                "Preserve exact formatting and content from the tool.")
+                        .user(chatRequest.getMessage() + " Limit to " + requestPageSize + " results.");
+                long promptBuildTime = System.currentTimeMillis() - promptBuildStart;
+                logger.info("Prompt building took {} ms", promptBuildTime);
 
-            long callStart = System.currentTimeMillis();
-            // Get content as String directly using the simpler API
-            String rawContent = prompt.call().content();
-            long callTime = System.currentTimeMillis() - callStart;
-            logger.info(">>> Prompt.call() (includes Claude processing) took {} ms <<<", callTime);
+                long callStart = System.currentTimeMillis();
+                // Get content as String directly using the simpler API
+                String rawContent = prompt.call().content();
+                long callTime = System.currentTimeMillis() - callStart;
+                logger.info(">>> Prompt.call() (includes Claude processing) took {} ms <<<", callTime);
 
-            // FAST PATH: Extract JSON directly from raw content instead of deserializing
-            long parseStart = System.currentTimeMillis();
-            if (rawContent != null) {
-                logger.debug("Raw content length: {} characters", rawContent.length());
-            } else {
-                logger.warn("Raw content is null");
+                // FAST PATH: Extract JSON directly from raw content instead of deserializing
+                long parseStart = System.currentTimeMillis();
+                if (rawContent != null) {
+                    logger.debug("Raw content length: {} characters", rawContent.length());
+                } else {
+                    logger.warn("Raw content is null");
+                    return List.of();
+                }
+
+                List<RankedCandidate> result = extractCandidatesFromRawContent(rawContent);
+                long parseTime = System.currentTimeMillis() - parseStart;
+                logger.info(">>> JSON extraction and parsing took {} ms <<<", parseTime);
+
+                logger.info("Result contains {} candidates", result.size());
+
+                long totalTime = System.currentTimeMillis() - totalStart;
+                logger.info("===== TOTAL CHAT TIME: {} ms (PromptBuild: {} ms, Call: {} ms, Parse: {} ms) =====",
+                        totalTime, promptBuildTime, callTime, parseTime);
+
+                return result;
+            } catch (org.springframework.ai.retry.NonTransientAiException e) {
+                // Non-transient errors (auth, bad request, etc.) - don't retry
+                logger.error("Non-transient API error: {}", e.getMessage());
+                long totalTime = System.currentTimeMillis() - totalStart;
+                logger.error("Total time before error: {} ms", totalTime);
                 return List.of();
+            } catch (Exception e) {
+                retryCount++;
+                long elapsedTime = System.currentTimeMillis() - totalStart;
+
+                if (retryCount < maxRetries) {
+                    // Calculate exponential backoff: 100ms, 200ms, 400ms
+                    long backoffMs = 100L * (long) Math.pow(2, retryCount - 1);
+                    logger.warn("Request failed (attempt {}/{}). Retrying in {} ms. Error: {}",
+                            retryCount, maxRetries, backoffMs, e.getMessage());
+
+                    try {
+                        Thread.sleep(backoffMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        logger.error("Retry sleep interrupted", ie);
+                        return List.of();
+                    }
+                } else {
+                    logger.error("Request failed after {} retries (total time: {} ms). Error: {}",
+                            maxRetries, elapsedTime, e.getMessage(), e);
+                    return List.of();
+                }
             }
-
-            List<RankedCandidate> result = extractCandidatesFromRawContent(rawContent);
-            long parseTime = System.currentTimeMillis() - parseStart;
-            logger.info(">>> JSON extraction and parsing took {} ms <<<", parseTime);
-
-            logger.info("Result contains {} candidates", result.size());
-
-            long totalTime = System.currentTimeMillis() - totalStart;
-            logger.info("===== TOTAL CHAT TIME: {} ms (PromptBuild: {} ms, Call: {} ms, Parse: {} ms) =====",
-                    totalTime, promptBuildTime, callTime, parseTime);
-
-            return result;
-        } catch (Exception e) {
-            logger.error("Error processing chat request", e);
-            long totalTime = System.currentTimeMillis() - totalStart;
-            logger.error("Total time before error: {} ms", totalTime);
-            return List.of();
         }
+
+        return List.of();
     }
 
     /**
