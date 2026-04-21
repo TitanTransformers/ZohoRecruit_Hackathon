@@ -10,10 +10,9 @@ const THEMES = [
 ];
 
 interface ModernNavbarProps {
-  costEstimate?: number;
 }
 
-const ModernNavbar: React.FC<ModernNavbarProps> = ({ costEstimate = 0 }) => {
+const ModernNavbar: React.FC<ModernNavbarProps> = () => {
   const navigate = useNavigate();
   const [currentTheme, setCurrentTheme] = useState('dark');
   const [isThemeOpen, setIsThemeOpen] = useState(false);
