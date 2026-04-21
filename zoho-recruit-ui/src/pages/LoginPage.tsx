@@ -68,8 +68,7 @@ const LoginPage: React.FC = () => {
               <div className="login-logo-icon">
                 <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
                   <rect width="48" height="48" rx="12" fill="url(#logoGrad)" />
-                  <path d="M12 32L18 16L24 28L30 16L36 32" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                  <defs>
+                  <path d="M12 16L18 32L24 20L30 32L36 16" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />                  <defs>
                     <linearGradient id="logoGrad" x1="0" y1="0" x2="48" y2="48">
                       <stop offset="0%" stopColor="#7C3AED" />
                       <stop offset="50%" stopColor="#2563EB" />

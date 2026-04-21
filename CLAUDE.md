@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a hackathon project implementing a recruitment platform using the **Model Context Protocol (MCP)**. It consists of three main modules:
+This is a hackathon project by **Team Titan Transformers** (Sudarshan Garg, Saurabh Kumar, Rupam Swain, Suryaprakash Rao) implementing **Wissen AI ATS**, a recruitment platform using the **Model Context Protocol (MCP)**. It consists of three main modules:
 
 1. **mcp-server-demo**: Spring Boot MCP server (port 8080) exposing AI-enhanced recruitment tools
 2. **mcp-client-demo**: Spring Boot MCP client (port 8081) that consumes the server's tools
