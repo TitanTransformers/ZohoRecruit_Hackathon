@@ -21,7 +21,8 @@ public class JobDescription {
     private List<String> requiredSkills;
     private List<String> preferredSkills;
     private String experienceLevel;
-    private Integer yearsOfExperience;
+    private Integer minYearsOfExperience;
+    private Integer maxYearsOfExperience;
     private List<String> qualifications;
     private List<String> responsibilities;
     private String department;

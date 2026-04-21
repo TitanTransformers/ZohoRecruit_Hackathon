@@ -4,19 +4,21 @@ spring:
   ai:
     anthropic:
       api-key: ${ANTHROPIC_API_KEY}
+      model:
+        name: claude-3-5-haiku-20241022 # Claude Haiku model for fast processing
       chat:
         options:
-          model: claude-sonnet-4-20250514   # Claude model to use
-          max-tokens: 8192
-          temperature: 0.1                  # Lower temperature for focused responses
+          max-tokens: 8192                          # Sufficient for JSON array responses
+          temperature: 0.0
     mcp:
       client:
         type: sync
-        request-timeout: 120s
+        request-timeout: 300s                        # 5 minutes
         streamable-http:
           connections:
             my-mcp-server:
-              url: ${MCP_SERVER_URL:http://localhost:8080/mcp}     # Streamable HTTP endpoint on MCP server
+              url: ${MCP_SERVER_URL:http://localhost:8080/mcp}
+
 logging:
   level:
     root: INFO
@@ -25,3 +27,4 @@ logging:
 
 server:
   port: ${PORT:8081}
+

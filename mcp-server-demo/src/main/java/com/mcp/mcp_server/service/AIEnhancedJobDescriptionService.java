@@ -15,16 +15,6 @@ import java.util.List;
 /**
  * AI-Enhanced Job Description Parsing Service using Claude Haiku
  * Provides intelligent extraction of JD metadata using LLM analysis
- *
- * This service also generates Zoho Recruit criteria expressions for
- * candidate search and filtering based on parsed job descriptions.
- *
- * Criteria Format (Zoho Recruit API):
- * - Single condition: (Field:operator:value)
- * - Chained (up to 10): ((Field1:op:val1)and(Field2:op:val2))
- * - Operators: equals, not_equal, contains, starts_with, greater_than, greater_equal, less_than, less_equal
- * - Numeric fields: Experience_in_Years, Current_Salary, Expected_Salary
- * - String fields: all others use string comparison
  */
 @Slf4j
 @Service
@@ -50,12 +40,6 @@ public class AIEnhancedJobDescriptionService {
         log.debug("Parsing job description using Claude Haiku AI");
 
         try {
-            // Verify API key is available
-            String apiKey = System.getenv("ANTHROPIC_API_KEY");
-            if (apiKey == null || apiKey.trim().isEmpty()) {
-                log.error("ANTHROPIC_API_KEY environment variable is not set");
-                throw new IllegalStateException("ANTHROPIC_API_KEY environment variable is required but not set");
-            }
 
             // Use Claude to intelligently extract JD metadata
             String aiAnalysis = analyzeJobDescriptionWithClaude(jobDescription);
@@ -135,7 +119,8 @@ public class AIEnhancedJobDescriptionService {
                     .jobTitle(getTextValue(jsonNode, "jobTitle", "Not Specified"))
                     .jobDescription(originalJD)
                     .experienceLevel(getTextValue(jsonNode, "experienceLevel", "Mid"))
-                    .yearsOfExperience(getIntValue(jsonNode, "yearsOfExperience"))
+                    .minYearsOfExperience(getIntValue(jsonNode, "minYearsOfExperience"))
+                    .maxYearsOfExperience(getIntValue(jsonNode, "maxYearsOfExperience"))
                     .requiredSkills(getListValue(jsonNode, "requiredSkills"))
                     .preferredSkills(getListValue(jsonNode, "preferredSkills"))
                     .qualifications(getListValue(jsonNode, "qualifications"))
@@ -260,98 +245,5 @@ public class AIEnhancedJobDescriptionService {
         return list;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Zoho Recruit Criteria Generation Methods
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Generate Zoho Recruit search criteria from a parsed job description
-     *
-     * Creates a criteria expression for searching candidates matching the JD.
-     * Format: (Field:operator:value) or ((Field1:op:val1)and(Field2:op:val2))
-     *
-     * @param jd The parsed job description
-     * @return Zoho Recruit criteria string
-     */
-    public String generateZohoCriteria(JobDescription jd) {
-        log.debug("Generating criteria for: {}", jd.getJobTitle());
-
-        ZohoCriteriaBuilder.CriteriaFilter filter = new ZohoCriteriaBuilder.CriteriaFilter();
-
-        // Add required skills
-        if (jd.getRequiredSkills() != null) {
-            jd.getRequiredSkills().stream()
-                    .filter(s -> s != null && !s.trim().isEmpty())
-                    .forEach(filter::addSkill);
-        }
-
-        // Add experience requirement
-        if (jd.getYearsOfExperience() != null && jd.getYearsOfExperience() > 0) {
-            filter.addExperience(jd.getYearsOfExperience());
-        }
-
-        // Add location
-        if (jd.getLocation() != null && !jd.getLocation().isEmpty()
-                && !jd.getLocation().equals("Not Specified")) {
-            filter.addLocation(jd.getLocation());
-        }
-
-        // Add experience level-based requirement
-        if (jd.getExperienceLevel() != null) {
-            int minYears = mapExperienceLevelToYears(jd.getExperienceLevel());
-            if (minYears > 0) {
-                filter.addExperience(minYears);
-            }
-        }
-
-        return filter.build();
-    }
-
-    /**
-     * Generate criteria including preferred skills
-     *
-     * @param jd The parsed job description
-     * @param includePreferred Include preferred skills in search
-     * @return Zoho Recruit criteria string
-     */
-    public String generateZohoCriteriaWithPreferences(JobDescription jd, boolean includePreferred) {
-        ZohoCriteriaBuilder.CriteriaFilter filter = new ZohoCriteriaBuilder.CriteriaFilter();
-
-        // Add required skills
-        if (jd.getRequiredSkills() != null) {
-            jd.getRequiredSkills().stream()
-                    .filter(s -> s != null && !s.trim().isEmpty())
-                    .forEach(filter::addSkill);
-        }
-
-        // Add preferred skills if requested
-        if (includePreferred && jd.getPreferredSkills() != null) {
-            jd.getPreferredSkills().stream()
-                    .filter(s -> s != null && !s.trim().isEmpty())
-                    .forEach(filter::addSkill);
-        }
-
-        // Add experience and location
-        if (jd.getYearsOfExperience() != null && jd.getYearsOfExperience() > 0) {
-            filter.addExperience(jd.getYearsOfExperience());
-        }
-        if (jd.getLocation() != null && !jd.getLocation().isEmpty()
-                && !jd.getLocation().equals("Not Specified")) {
-            filter.addLocation(jd.getLocation());
-        }
-
-        return filter.build();
-    }
-
-    private int mapExperienceLevelToYears(String level) {
-        if (level == null) return 0;
-        return switch (level.toLowerCase()) {
-            case "junior", "entry-level", "entry level" -> 0;
-            case "mid", "mid-level", "mid level", "intermediate" -> 3;
-            case "senior", "senior-level", "senior level" -> 7;
-            case "lead", "principal", "executive", "c-level" -> 10;
-            default -> 0;
-        };
-    }
 }
 

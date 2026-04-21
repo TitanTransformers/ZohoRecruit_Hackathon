@@ -14,13 +14,7 @@ public class McpClientConfig {
 
     /**
      * Configure ChatClient with MCP tool callbacks.
-     * <p>
-     * - ChatClient.Builder is auto-configured by Spring AI (uses the Anthropic ChatModel).
-     * - ToolCallbackProvider is auto-configured by spring-ai-starter-mcp-client and
-     *   exposes all tools discovered from connected MCP servers.
-     * <p>
-     * Spring AI handles the full tool-call loop automatically: when Claude requests a
-     * tool, the framework invokes it via MCP and feeds the result back to Claude.
+     * Spring AI auto-configures the Anthropic client and handles timeouts.
      */
     @Bean
     ChatClient chatClient(ChatClient.Builder chatClientBuilder, ToolCallbackProvider tools) {

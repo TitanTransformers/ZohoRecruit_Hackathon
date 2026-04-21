@@ -28,10 +28,11 @@ public class RankedCandidate {
     @JsonAlias({"email_address", "emailAddress"})
     private String email;
 
-    @JsonAlias({"phone_number", "phoneNumber"})
-    private String phone;
+    @JsonAlias({"phone_number", "phoneNumber", "mobile_number", "mobileNumber", "mobile", "Mobile"})
+    private String mobile;
 
-    @JsonAlias({"match_percentage", "matchScore", "match_score", "overall_match"})
+    @JsonAlias({"experience_years", "experienceYears", "years_of_experience", "yearsOfExperience"})
+    private Integer experience;
     private Double matchPercentage;
 
     @JsonAlias({"skill_match_percentage", "skillMatch", "skill_match"})

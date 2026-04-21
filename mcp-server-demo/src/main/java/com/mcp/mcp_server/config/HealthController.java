@@ -19,7 +19,7 @@ public class HealthController {
     public Map<String, Object> health() {
         return Map.of(
                 "status", "UP",
-                "service", "mysql-mcp-server",
+                "service", "recruitment-mcp-server",
                 "timestamp", Instant.now().toString(),
                 "endpoints", Map.of(
                         "mcp", "/mcp",

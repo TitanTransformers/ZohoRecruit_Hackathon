@@ -26,7 +26,6 @@ import java.util.*;
 public class ZohoRecruitService {
 
     private final ZohoRecruitAPIService zohoRecruitAPIService;
-    private final ZohoRecruitOAuthService oauthService;
 
     /**
      * Search for candidates in Zoho Recruit using criteria
@@ -51,18 +50,6 @@ public class ZohoRecruitService {
         }
     }
 
-    /**
-     * Get detailed candidate profile from Zoho Recruit
-     */
-    public Candidate getCandidateDetails(String candidateId) {
-        try {
-            log.info("Fetching candidate details for ID: {}", candidateId);
-            return zohoRecruitAPIService.getCandidateDetails(candidateId);
-        } catch (Exception e) {
-            log.error("Error fetching candidate details from Zoho Recruit", e);
-            return null;
-        }
-    }
 
     /**
      * Build Zoho Recruit search criteria string from map using ZohoCriteriaBuilder
@@ -212,19 +199,6 @@ public class ZohoRecruitService {
     }
 
 
-    /**
-     * Get access token (for backward compatibility)
-     */
-    public synchronized String getAccessToken() {
-        return oauthService.getAccessToken();
-    }
-
-    /**
-     * Invalidate cached token to force refresh
-     */
-    public void invalidateToken() {
-        oauthService.invalidateToken();
-    }
 }
 
 

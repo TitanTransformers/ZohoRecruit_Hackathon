@@ -1,142 +1,220 @@
 package com.mcp.mcp_server.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Represents a candidate profile from Zoho Recruit API
- * Maps to all fields from Zoho Recruit's Candidate object
- *
- * Field Mapping Reference:
- * - id: Internal Zoho ID (486812000001660001)
- * - Candidate_ID: Human-readable ID (ZR_001_CAND)
- * - Full_Name, First_Name, Last_Name: Name fields
- * - Email, Mobile, Phone: Contact fields
- * - Skill_Set: Comma-separated skills
- * - Experience_in_Years: Years of experience
- * - Current_Employer, Current_Job_Title, Designation: Job info
- * - City, State, Country: Location fields
- * - Current_Salary, Expected_Salary: Salary information
- * - Candidate_Status: Status (New, Shortlisted, Rejected, etc.)
- * - Created_Time, Updated_On: Timestamps
- * - $approved: Approval flag
- * - Is_Locked, Is_Unqualified: Status flags
- * - Educational_Details, Experience_Details: Complex arrays
- * - Associated_Tags: Tags array
- * - Source: Candidate source (LinkedIn, Indeed, etc.)
- * - Lead_Owner, Created_By: User references
- * - Rating, Is_Attachment_Present: Additional flags
+ * Maps to all fields from Zoho Recruit's Candidate object via @JsonProperty annotations
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Candidate {
     // ─────────────────────────────────────────────────────────────────────────
     // Identifier Fields
     // ─────────────────────────────────────────────────────────────────────────
-    private String id;                      // Zoho internal ID (from "id" field)
-    private String candidateId;             // Human-readable ID (from "Candidate_ID" field)
+    @JsonProperty("id")
+    private String id;
+
+    @JsonProperty("Candidate_ID")
+    private String candidateId;
 
     // ─────────────────────────────────────────────────────────────────────────
     // Name Fields
     // ─────────────────────────────────────────────────────────────────────────
-    private String firstName;               // From "First_Name"
-    private String lastName;                // From "Last_Name"
-    private String name;                    // Full name from "Full_Name"
+    @JsonProperty("First_Name")
+    private String firstName;
+
+    @JsonProperty("Last_Name")
+    private String lastName;
+
+    @JsonProperty("Full_Name")
+    private String name;
 
     // ─────────────────────────────────────────────────────────────────────────
     // Contact Fields
     // ─────────────────────────────────────────────────────────────────────────
-    private String email;                   // From "Email"
-    private String phone;                   // From "Phone" (may be null)
-    private String mobile;                  // From "Mobile" (primary contact)
-    private Boolean emailOptOut;            // From "Email_Opt_Out" flag
+    @JsonProperty("Email")
+    private String email;
+
+    @JsonProperty("Phone")
+    private String phone;
+
+    @JsonProperty("Mobile")
+    private String mobile;
+
+    @JsonProperty("Email_Opt_Out")
+    private Boolean emailOptOut;
 
     // ─────────────────────────────────────────────────────────────────────────
     // Job Profile Fields
     // ─────────────────────────────────────────────────────────────────────────
-    private String currentCompany;          // From "Current_Employer"
-    private String currentDesignation;      // From "Current_Job_Title"
-    private String currentPosition;         // Alternative/mapped from "Designation"
-    private String designation;             // From "Designation" (desired role)
+    @JsonProperty("Current_Employer")
+    private String currentCompany;
+
+    @JsonProperty("Current_Job_Title")
+    private String currentDesignation;
+
+    @JsonProperty("Designation")
+    private String designation;
 
     // ─────────────────────────────────────────────────────────────────────────
     // Location Fields
     // ─────────────────────────────────────────────────────────────────────────
-    private String location;                // Mapped from "City" or full location
-    private String city;                    // From "City"
-    private String state;                   // From "State"
-    private String country;                 // From "Country"
+    @JsonProperty("City")
+    private String city;
+
+    @JsonProperty("State")
+    private String state;
+
+    @JsonProperty("Country")
+    private String country;
 
     // ─────────────────────────────────────────────────────────────────────────
     // Skills & Experience Fields
     // ─────────────────────────────────────────────────────────────────────────
-    private String skillsString;            // From "Skill_Set" (comma-separated)
-    private List<String> skills;            // Parsed from "Skill_Set"
-    private Integer yearsOfExperience;      // From "Experience_in_Years"
-    private String experience;              // Experience description
-    private List<Map<String, Object>> experienceDetails;  // From "Experience_Details" array
+    private List<String> skills;
+
+    @JsonProperty("Experience_in_Years")
+    private Integer yearsOfExperience;
+
+    @JsonProperty("experience")
+    private String experience;
+
+    @JsonProperty("Experience_Details")
+    private List<Map<String, Object>> experienceDetails;
 
     // ─────────────────────────────────────────────────────────────────────────
     // Education Fields
     // ─────────────────────────────────────────────────────────────────────────
-    private String highestQualification;    // From "Highest_Qualification_Held"
-    private List<String> qualifications;    // Qualifications as list
-    private List<Map<String, Object>> educationalDetails;  // From "Educational_Details" array
+    @JsonProperty("Highest_Qualification_Held")
+    private String highestQualification;
+
+    @JsonProperty("Educational_Details")
+    private List<Map<String, Object>> educationalDetails;
 
     // ─────────────────────────────────────────────────────────────────────────
     // Salary Fields
     // ─────────────────────────────────────────────────────────────────────────
-    private Long currentSalary;             // From "Current_Salary"
-    private Long expectedSalary;            // From "Expected_Salary"
-    private Long salary;                    // From "Salary" field
+    @JsonProperty("Current_Salary")
+    private Long currentSalary;
+
+    @JsonProperty("Expected_Salary")
+    private Long expectedSalary;
+
+    @JsonProperty("Salary")
+    private Long salary;
 
     // ─────────────────────────────────────────────────────────────────────────
     // Document Fields
     // ─────────────────────────────────────────────────────────────────────────
-    private String resume;                  // Resume text content
-    private String resumeUrl;               // Resume URL
-    private Boolean isAttachmentPresent;    // From "Is_Attachment_Present" flag
+    @JsonProperty("resume_url")
+    private String resumeUrl;
+
+    @JsonProperty("Is_Attachment_Present")
+    private Boolean isAttachmentPresent;
 
     // ─────────────────────────────────────────────────────────────────────────
     // Status & Classification Fields
     // ─────────────────────────────────────────────────────────────────────────
-    private String status;                  // From "Candidate_Status" (Shortlisted, New, Rejected, etc.)
-    private Boolean isUnqualified;          // From "Is_Unqualified" flag
-    private Boolean approved;               // From "$approved" flag
-    private Boolean isLocked;               // From "Is_Locked" flag
+    @JsonProperty("Candidate_Status")
+    private String status;
+
+    @JsonProperty("Is_Unqualified")
+    private Boolean isUnqualified;
+
+    @JsonProperty("$approved")
+    private Boolean approved;
+
+    @JsonProperty("Is_Locked")
+    private Boolean isLocked;
 
     // ─────────────────────────────────────────────────────────────────────────
     // Source & Tracking Fields
     // ─────────────────────────────────────────────────────────────────────────
-    private String source;                  // From "Source" (LinkedIn, Indeed, etc.)
-    private List<Map<String, Object>> associatedTags;  // From "Associated_Tags" array
-    private Map<String, Object> rating;     // From "Rating" object (may be null)
+    @JsonProperty("Source")
+    private String source;
+
+    @JsonProperty("Associated_Tags")
+    private List<Map<String, Object>> associatedTags;
+
+    @JsonProperty("Rating")
+    private Map<String, Object> rating;
 
     // ─────────────────────────────────────────────────────────────────────────
     // Timestamps
     // ─────────────────────────────────────────────────────────────────────────
-    private String createdTime;             // From "Created_Time" (ISO timestamp)
-    private String updatedOn;               // From "Updated_On" (ISO timestamp)
-    private LocalDateTime createdAt;        // Parsed timestamp
+    @JsonProperty("Created_Time")
+    private String createdTime;
+
+    @JsonProperty("Updated_On")
+    private String updatedOn;
 
     // ─────────────────────────────────────────────────────────────────────────
     // User References
     // ─────────────────────────────────────────────────────────────────────────
-    private Map<String, Object> createdBy;  // From "Created_By" object {id, name}
-    private Map<String, Object> leadOwner;  // From "Lead_Owner" object {id, name}
+    @JsonProperty("Created_By")
+    private Map<String, Object> createdBy;
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // API Response Storage
-    // ─────────────────────────────────────────────────────────────────────────
-    private Object zohoProfile;             // Original Zoho API response
+    @JsonProperty("Lead_Owner")
+    private Map<String, Object> leadOwner;
+
+    /**
+     * Custom setter for Skill_Set — populates the skills list.
+     */
+    @JsonSetter("Skill_Set")
+    public void setSkillSet(String skillSet) {
+        if (skillSet != null && !skillSet.isEmpty()) {
+            this.skills = List.of(skillSet.split(",\\s*"));
+        } else {
+            this.skills = new ArrayList<>();
+        }
+    }
+
+    /**
+     * Post-deserialization hook to derive computed fields.
+     * Called after Jackson populates all fields.
+     */
+    @JsonProperty
+    private void deriveComputedFields() {
+        // Derive full name if not provided
+        if (this.name == null) {
+            this.name = firstName != null && lastName != null ? firstName + " " + lastName :
+                        firstName != null ? firstName :
+                        lastName;
+        }
+    }
+
+    /**
+     * Compact JSON representation for AI prompt consumption.
+     */
+    @Override
+    public String toString() {
+        return "{\"id\":\"" + esc(candidateId)
+                + "\",\"title\":\"" + esc(currentDesignation)
+                + "\",\"skills\":\"" + esc(skills != null ? String.join(", ", skills) : "")
+                + "\",\"yoe\":" + (yearsOfExperience != null ? yearsOfExperience : "null")
+                + "}";
+    }
+
+    private static String esc(String v) {
+        if (v == null) return "";
+        return v.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
+    }
 }
-
