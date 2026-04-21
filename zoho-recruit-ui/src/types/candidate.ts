@@ -6,7 +6,8 @@ export interface CandidateProfile {
   candidateId?: string;
   name: string;
   email: string;
-  phone?: string;
+  phone?: string;          // Legacy / normalised
+  mobile?: string;         // New API field
   matchPercentage?: number;
   skillMatchPercentage?: number;
   experienceMatchPercentage?: number;
@@ -16,8 +17,24 @@ export interface CandidateProfile {
   missingSkills: string[];
   matchReasoning?: string;
   fitAnalysis?: string;
-  analysis?: string; // Legacy support
+  analysis?: string;        // Legacy support
   matchedPercentage?: number; // Legacy support
+}
+
+/**
+ * Top-level API search response (new format)
+ */
+export interface SearchResponse {
+  success: boolean;
+  jobTitle?: string;
+  requiredSkills?: string[];
+  preferredSkills?: string[];
+  experienceLevel?: string;
+  totalCandidatesFetched?: number;
+  totalCandidatesReturned?: number;
+  rankedCandidates?: CandidateProfile[];
+  elapsedMs?: number;
+  message?: string;
 }
 
 /**

@@ -49,10 +49,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, onNavigate, stats }) => {
           <span className="stat-label">Avg match %</span>
           <span className="stat-value">{stats.avgMatch}</span>
         </div>
-        <div className="stat-row">
-          <span className="stat-label">Total cost</span>
-          <span className="stat-value">{stats.totalCost}</span>
-        </div>
       </div>
 
       {/* Branding Footer */}

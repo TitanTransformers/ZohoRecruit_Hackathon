@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import './LoginPage.css';
 
 const DUMMY_USERS = [
-  { email: 'admin@wissen.com', password: 'admin123', name: 'Admin User', role: 'Administrator' },
-  { email: 'recruiter@wissen.com', password: 'recruit123', name: 'Sarah Chen', role: 'Senior Recruiter' },
-  { email: 'demo@wissen.com', password: 'demo123', name: 'Demo User', role: 'Hiring Manager' },
+  { email: 'admin@wissen.com', password: 'admin123', name: 'Tony Stark', role: 'Administrator' },
+  { email: 'recruiter@wissen.com', password: 'recruit123', name: 'Bruce Wayne', role: 'Senior Recruiter' },
+  { email: 'demo@wissen.com', password: 'demo123', name: 'Peter Parker', role: 'Hiring Manager' },
 ];
 
 const LoginPage: React.FC = () => {
@@ -68,8 +68,7 @@ const LoginPage: React.FC = () => {
               <div className="login-logo-icon">
                 <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
                   <rect width="48" height="48" rx="12" fill="url(#logoGrad)" />
-                  <path d="M12 32L18 16L24 28L30 16L36 32" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                  <defs>
+                  <path d="M12 16L18 32L24 20L30 32L36 16" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />                  <defs>
                     <linearGradient id="logoGrad" x1="0" y1="0" x2="48" y2="48">
                       <stop offset="0%" stopColor="#7C3AED" />
                       <stop offset="50%" stopColor="#2563EB" />
@@ -80,7 +79,7 @@ const LoginPage: React.FC = () => {
               </div>
               <div>
                 <h1 className="login-brand-name">Wissen</h1>
-                <p className="login-brand-tagline">AI Sourcer</p>
+                <p className="login-brand-tagline">Intelligent AI ATS</p>
               </div>
             </div>
 
@@ -117,10 +116,21 @@ const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="login-brand-footer">
-              <span>Made by </span>
-              <span className="login-gradient-text" style={{ fontWeight: 700 }}>Titan Transformers</span>
-              <span> · Wissen Hackathon 2026</span>
+            <div className="login-brand-footer" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+              <div>
+                <span>Made by </span>
+                <span className="login-gradient-text" style={{ fontWeight: 700 }}>Titan Transformers</span>
+                <span> · Wissen Hackathon 2026</span>
+              </div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', display: 'flex', flexWrap: 'wrap', gap: 6, width: '100%' }}>
+                <span>Sudarshan Garg</span>
+                <span style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>
+                <span>Saurabh Kumar</span>
+                <span style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>
+                <span>Rupam Swain</span>
+                <span style={{ color: 'rgba(255,255,255,0.2)' }}>·</span>
+                <span>Suryaprakash Rao</span>
+              </div>
             </div>
           </div>
         </div>
@@ -216,8 +226,8 @@ const LoginPage: React.FC = () => {
                 >
                   <div className="login-quick-avatar" style={{
                     background: i === 0 ? 'linear-gradient(135deg,#7C3AED,#4F46E5)' :
-                               i === 1 ? 'linear-gradient(135deg,#0D9488,#0891B2)' :
-                                         'linear-gradient(135deg,#2563EB,#7C3AED)',
+                      i === 1 ? 'linear-gradient(135deg,#0D9488,#0891B2)' :
+                        'linear-gradient(135deg,#2563EB,#7C3AED)',
                   }}>
                     {user.name.split(' ').map(n => n[0]).join('')}
                   </div>

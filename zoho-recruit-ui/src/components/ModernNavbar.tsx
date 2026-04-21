@@ -67,13 +67,10 @@ const ModernNavbar: React.FC<ModernNavbarProps> = ({ costEstimate = 0 }) => {
     <nav className="navbar">
       <div className="nav-logo">
         <div className="nav-logo-icon">✦</div>
-        <span className="nav-logo-text">Wissen AI Sourcer</span>
+        <span className="nav-logo-text">Wissen AI ATS</span>
       </div>
       <div className="nav-right">
-        <div className="cost-badge">
-          <div className="cost-dot" />
-          <span>~${costEstimate.toFixed(3)} used</span>
-        </div>
+
 
         {/* Theme Dropdown */}
         <div className="theme-dropdown-wrap" ref={dropdownRef}>
@@ -104,8 +101,8 @@ const ModernNavbar: React.FC<ModernNavbarProps> = ({ costEstimate = 0 }) => {
           )}
         </div>
 
-        <button className="nav-btn">Docs</button>
-        <div className="hackathon-pill">Hackathon 2026</div>
+
+        <div className="hackathon-pill">AI Hackathon 2026</div>
 
         {/* User & Logout */}
         {user && (
