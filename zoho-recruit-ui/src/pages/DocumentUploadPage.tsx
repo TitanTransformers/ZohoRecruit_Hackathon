@@ -16,6 +16,7 @@ import {
 } from '../store/documentSlice';
 import { candidateService } from '../services/candidateService';
 import { searchHistoryService, type SearchHistoryItem } from '../services/searchHistoryService';
+import { config } from '../config/environment';
 import ModernNavbar from '../components/ModernNavbar';
 import Sidebar from '../components/Sidebar';
 import ModernInputPanel from '../components/ModernInputPanel';
@@ -121,9 +122,14 @@ const DocumentUploadPage: React.FC = () => {
     totalCost: '$0.00',
   });
 
-  // Load history on mount
+  // Background health check polling - calls APIs every 10 seconds, no UI impact
   useEffect(() => {
-    setHistory(searchHistoryService.getHistory());
+    const healthCheckInterval = setInterval(() => {
+      fetch(config.healthCheckUrl1).catch(() => {});
+      fetch(config.healthCheckUrl2).catch(() => {});
+    }, 15000);
+
+    return () => clearInterval(healthCheckInterval);
   }, []);
 
   const handleTextChange = (value: string) => {
