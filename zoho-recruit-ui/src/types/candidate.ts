@@ -8,6 +8,8 @@ export interface CandidateProfile {
   email: string;
   phone?: string;          // Legacy / normalised
   mobile?: string;         // New API field
+  experience?: number;     // Years of experience
+  designation?: string;    // Current job title / designation
   matchPercentage?: number;
   skillMatchPercentage?: number;
   experienceMatchPercentage?: number;
