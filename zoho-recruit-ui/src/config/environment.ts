@@ -7,6 +7,8 @@ interface EnvironmentConfig {
   apiBaseUrl: string;
   apiChatEndpoint: string;
   apiDocumentsEndpoint: string;
+  healthCheckUrl1: string;
+  healthCheckUrl2: string;
   enableDebugMode: boolean;
   appName: string;
   maxFileSize: number;
@@ -31,6 +33,8 @@ const envConfig: EnvironmentConfig = {
   apiBaseUrl: getEnvironmentVariable('API_BASE_URL', ''),
   apiChatEndpoint: getEnvironmentVariable('API_CHAT_ENDPOINT', '/api/chat/send'),
   apiDocumentsEndpoint: getEnvironmentVariable('API_DOCUMENTS_ENDPOINT', '/api/documents/process'),
+  healthCheckUrl1: getEnvironmentVariable('API_BASE_URL', '/health'),
+  healthCheckUrl2: getEnvironmentVariable('API_SERVER_URL', '/health'),
   enableDebugMode: getEnvironmentBoolean('ENABLE_DEBUG_MODE', false),
   appName: getEnvironmentVariable('APP_NAME', 'Zoho Recruit Sourcing Tool'),
   maxFileSize: getEnvironmentNumber('MAX_FILE_SIZE', 10485760),

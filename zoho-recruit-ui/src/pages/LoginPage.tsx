@@ -79,7 +79,7 @@ const LoginPage: React.FC = () => {
               </div>
               <div>
                 <h1 className="login-brand-name">Wissen</h1>
-                <p className="login-brand-tagline">Intelligent AI ATS</p>
+                <p className="login-brand-tagline">RECRUIT NINJA</p>
               </div>
             </div>
 

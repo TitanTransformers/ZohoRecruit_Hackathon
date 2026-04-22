@@ -56,6 +56,11 @@ public class ZohoRecruitService {
      * Converts map like {"skills": "Java,Python", "experience_years": "5"}
      * to valid Zoho criteria string using proper field names and operators
      *
+     * IMPORTANT LOGIC:
+     * - Skills, Designations, Locations → joined with OR (find candidates matching ANY)
+     * - Experience range (min AND max) → joined with AND (must satisfy BOTH)
+     * - Final: ((Skills OR Designations OR ...) OR ...) AND (MinExp AND MaxExp)
+     *
      * VALIDATION ENSURES:
      * - Only valid field names from ZohoRecruitCandidateSearchField are used
      * - Correct operators for each field type
@@ -69,7 +74,10 @@ public class ZohoRecruitService {
             return "";
         }
 
-        ZohoCriteriaBuilder.CriteriaFilter filter = new ZohoCriteriaBuilder.CriteriaFilter();
+        ZohoCriteriaBuilder.CriteriaFilter orFilter = new ZohoCriteriaBuilder.CriteriaFilter();      // OR grouped conditions
+        ZohoCriteriaBuilder.CriteriaFilter andExpFilter = new ZohoCriteriaBuilder.CriteriaFilter(); // AND for experience range
+        Integer minExperience = null;
+        Integer maxExperience = null;
 
         try {
             // Process each search criterion
@@ -83,30 +91,49 @@ public class ZohoRecruitService {
 
                 switch (key.toLowerCase()) {
                     case "skills" -> {
-                        // Handle multiple skills (comma-separated)
+                        // Handle multiple skills (comma-separated) - each added to OR filter
                         String[] skills = value.split(",");
                         for (String skill : skills) {
-                            filter.addSkill(skill.trim());
+                            orFilter.addSkill(skill.trim());
                         }
                     }
-                    case "skill" -> filter.addSkill(value);
+                    case "skill" -> orFilter.addSkill(value);
 
                     case "experience_years", "experience_in_years", "years_of_experience" -> {
+                        // Default experience (both min and max if single value)
                         try {
-                            filter.addExperience(Integer.parseInt(value));
+                            int years = Integer.parseInt(value);
+                            minExperience = years;
+                            maxExperience = years;
                         } catch (NumberFormatException e) {
                             log.warn("Invalid experience value (must be numeric): {}. Skipping.", value);
                         }
                     }
 
-                    case "location", "city" -> filter.addLocation(value);
+                    case "min_experience_years" -> {
+                        try {
+                            minExperience = Integer.parseInt(value);
+                        } catch (NumberFormatException e) {
+                            log.warn("Invalid min experience value: {}. Skipping.", value);
+                        }
+                    }
 
-                    case "status", "candidate_status" -> filter.addStatus(value);
+                    case "max_experience_years" -> {
+                        try {
+                            maxExperience = Integer.parseInt(value);
+                        } catch (NumberFormatException e) {
+                            log.warn("Invalid max experience value: {}. Skipping.", value);
+                        }
+                    }
+
+                    case "location", "city" -> orFilter.addLocation(value);
+
+                    case "status", "candidate_status" -> orFilter.addStatus(value);
 
                     case "current_salary" -> {
                         try {
                             Integer salary = Integer.parseInt(value);
-                            filter.addCondition(ZohoRecruitCandidateSearchField.CURRENT_SALARY,
+                            orFilter.addCondition(ZohoRecruitCandidateSearchField.CURRENT_SALARY,
                                     ZohoCriteriaBuilder.Operator.GREATER_EQUAL, salary);
                         } catch (NumberFormatException e) {
                             log.warn("Invalid salary value (must be numeric): {}. Skipping.", value);
@@ -116,7 +143,7 @@ public class ZohoRecruitService {
                     case "expected_salary" -> {
                         try {
                             Integer salary = Integer.parseInt(value);
-                            filter.addCondition(ZohoRecruitCandidateSearchField.EXPECTED_SALARY,
+                            orFilter.addCondition(ZohoRecruitCandidateSearchField.EXPECTED_SALARY,
                                     ZohoCriteriaBuilder.Operator.GREATER_EQUAL, salary);
                         } catch (NumberFormatException e) {
                             log.warn("Invalid salary value (must be numeric): {}. Skipping.", value);
@@ -124,47 +151,115 @@ public class ZohoRecruitService {
                     }
 
                     case "designation", "job_title" ->
-                        filter.addCondition(ZohoRecruitCandidateSearchField.DESIGNATION,
+                        orFilter.addCondition(ZohoRecruitCandidateSearchField.DESIGNATION,
                                 ZohoCriteriaBuilder.Operator.CONTAINS, value);
 
                     case "company", "current_employer" ->
-                        filter.addCondition(ZohoRecruitCandidateSearchField.CURRENT_EMPLOYER,
+                        orFilter.addCondition(ZohoRecruitCandidateSearchField.CURRENT_EMPLOYER,
                                 ZohoCriteriaBuilder.Operator.CONTAINS, value);
 
                     case "email" ->
-                        filter.addCondition(ZohoRecruitCandidateSearchField.EMAIL,
+                        orFilter.addCondition(ZohoRecruitCandidateSearchField.EMAIL,
                                 ZohoCriteriaBuilder.Operator.EQUALS, value);
 
                     case "phone", "mobile" ->
-                        filter.addCondition(ZohoRecruitCandidateSearchField.MOBILE,
+                        orFilter.addCondition(ZohoRecruitCandidateSearchField.MOBILE,
                                 ZohoCriteriaBuilder.Operator.EQUALS, value);
 
                     // Additional fields
                     case "qualification" ->
-                        filter.addCondition(ZohoRecruitCandidateSearchField.HIGHEST_QUALIFICATION_HELD,
+                        orFilter.addCondition(ZohoRecruitCandidateSearchField.HIGHEST_QUALIFICATION_HELD,
                                 ZohoCriteriaBuilder.Operator.EQUALS, value);
 
                     case "state" ->
-                        filter.addCondition(ZohoRecruitCandidateSearchField.STATE,
+                        orFilter.addCondition(ZohoRecruitCandidateSearchField.STATE,
                                 ZohoCriteriaBuilder.Operator.EQUALS, value);
 
                     case "country" ->
-                        filter.addCondition(ZohoRecruitCandidateSearchField.COUNTRY,
+                        orFilter.addCondition(ZohoRecruitCandidateSearchField.COUNTRY,
                                 ZohoCriteriaBuilder.Operator.EQUALS, value);
 
                     default -> {
                         log.debug("Unknown search criterion key: {}. Attempting to map...", key);
                         // Try to find matching field in enum by name normalization
-                        attemptToAddCondition(filter, key, value);
+                        attemptToAddCondition(orFilter, key, value);
                     }
                 }
             }
 
-            return filter.build();
+            // Build final criteria with proper operator precedence
+            // OR conditions for skills/designations/locations
+            // AND conditions for experience range only
+            return buildCriteriaWithPrecedence(orFilter, minExperience, maxExperience, andExpFilter);
         } catch (Exception e) {
             log.error("Error building criteria with ZohoCriteriaBuilder", e);
             throw new IllegalArgumentException("Invalid search criteria: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Build criteria with proper operator precedence:
+     * - OR for skills, designations, locations, etc. (all grouped together)
+     * - AND exclusively for experience range (min and max must both be satisfied)
+     * - Final structure ensures correct precedence:
+     *   * If no experience range: ((skill1)or(skill2)or(designation)or(location))
+     *   * If experience range: (((skill1)or(skill2)or(designation)or(location)))and(((min_exp>=5)and(max_exp<=10)))
+     */
+    private String buildCriteriaWithPrecedence(ZohoCriteriaBuilder.CriteriaFilter orFilter,
+                                                Integer minExperience, Integer maxExperience,
+                                                ZohoCriteriaBuilder.CriteriaFilter andExpFilter) {
+        List<String> finalConditions = new ArrayList<>();
+
+        // Build OR conditions (skills, designations, locations, etc.)
+        if (!orFilter.isEmpty()) {
+            String orCriteria = orFilter.build();  // This produces: ((cond1))or((cond2))or((cond3))
+            log.debug("OR criteria (before wrapping): {}", orCriteria);
+            // Wrap the entire OR group in parentheses to ensure precedence over AND
+            finalConditions.add("(" + orCriteria + ")");
+        }
+
+        // Build AND conditions for experience range
+        if (minExperience != null && maxExperience != null) {
+            log.debug("Adding experience range: min={}, max={}", minExperience, maxExperience);
+            String minExpCond = ZohoCriteriaBuilder.buildCondition(
+                    ZohoRecruitCandidateSearchField.EXPERIENCE_IN_YEARS,
+                    ZohoCriteriaBuilder.Operator.GREATER_EQUAL, minExperience);
+            String maxExpCond = ZohoCriteriaBuilder.buildCondition(
+                    ZohoRecruitCandidateSearchField.EXPERIENCE_IN_YEARS,
+                    ZohoCriteriaBuilder.Operator.LESS_EQUAL, maxExperience);
+            // Experience range uses AND - wrap in parentheses
+            finalConditions.add("(" + minExpCond + "and" + maxExpCond + ")");
+        } else if (minExperience != null) {
+            log.debug("Adding minimum experience: {}", minExperience);
+            String minExpCond = ZohoCriteriaBuilder.buildCondition(
+                    ZohoRecruitCandidateSearchField.EXPERIENCE_IN_YEARS,
+                    ZohoCriteriaBuilder.Operator.GREATER_EQUAL, minExperience);
+            finalConditions.add(minExpCond);
+        } else if (maxExperience != null) {
+            log.debug("Adding maximum experience: {}", maxExperience);
+            String maxExpCond = ZohoCriteriaBuilder.buildCondition(
+                    ZohoRecruitCandidateSearchField.EXPERIENCE_IN_YEARS,
+                    ZohoCriteriaBuilder.Operator.LESS_EQUAL, maxExperience);
+            finalConditions.add(maxExpCond);
+        }
+
+        // Combine final conditions with AND
+        if (finalConditions.isEmpty()) {
+            throw new IllegalArgumentException("No valid search criteria provided");
+        }
+
+        String result;
+        if (finalConditions.size() == 1) {
+            // Single condition - no need for joining
+            result = finalConditions.get(0);
+        } else {
+            // Multiple conditions (OR group AND experience range) - join with AND
+            // Result format: (((OR_GROUP)))and(((EXP_MIN_AND_MAX)))
+            result = String.join("and", finalConditions);
+        }
+
+        log.info("Final search criteria: {}", result);
+        return result;
     }
 
     /**

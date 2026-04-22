@@ -60,7 +60,8 @@ public class AIEnhancedJobDescriptionService {
                 {
                   "jobTitle": "extracted job title or designation",
                   "experienceLevel": "Junior/Mid/Senior/Executive",
-                  "yearsOfExperience": number or null,
+                  "minYearsOfExperience": number or null,
+                  "maxYearsOfExperience": number or null,
                   "requiredSkills": ["skill1", "skill2", "skill3", ...],
                   "preferredSkills": ["skill1", "skill2", ...],
                   "qualifications": ["qualification1", "qualification2", ...],
@@ -74,11 +75,21 @@ public class AIEnhancedJobDescriptionService {
                   "salaryRange": "salary range if mentioned or null"
                 }
 
+                CRITICAL INSTRUCTIONS FOR EXPERIENCE EXTRACTION:
+                - If JD says "5 years experience": minYearsOfExperience=5, maxYearsOfExperience=minYearsOfExperience+5
+                - If JD says "5-10 years": minYearsOfExperience=5, maxYearsOfExperience=10
+                - If JD says "3+ years": minYearsOfExperience=3, maxYearsOfExperience=minYearsOfExperience+5
+                - If JD says "2-5 years or equivalent": minYearsOfExperience=2, maxYearsOfExperience=5
+                - If JD says " less than 5 years": minYearsOfExperience=0, maxYearsOfExperience=5
+                - experienceLevel is separate and semantic (Junior/Mid/Senior/Executive)
+                - Extract BOTH min and max if a range is present
+                
                 Be comprehensive and extract all relevant skills, requirements, and benefits mentioned.
                 Mapping Guide:
                 - jobTitle → Current_Job_Title (Zoho field)
                 - experienceLevel → Experience_in_Years (converted: Junior=0, Mid=3, Senior=7, Lead=10)
-                - yearsOfExperience → Experience_in_Years (Zoho field)
+                - minYearsOfExperience → MINIMUM Experience_in_Years (Zoho field) [use >=]
+                - maxYearsOfExperience → MAXIMUM Experience_in_Years (Zoho field) [use <=]
                 - requiredSkills → Skill_Set (Zoho field)
                 - preferredSkills → Skill_Set (Zoho field)
                 - qualifications → Highest_Qualification_Held (Zoho field)
