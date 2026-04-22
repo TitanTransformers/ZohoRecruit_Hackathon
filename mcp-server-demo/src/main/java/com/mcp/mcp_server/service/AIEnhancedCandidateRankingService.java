@@ -377,6 +377,8 @@ public class AIEnhancedCandidateRankingService {
                     .name(candidate.getName())
                     .email(candidate.getEmail())
                     .mobile(candidate.getMobile() != null ? candidate.getMobile() : "N/A")
+                    .experience(candidate.getYearsOfExperience())
+                    .designation(candidate.getCurrentDesignation() != null ? candidate.getCurrentDesignation() : candidate.getDesignation())
                     .matchPercentage(Math.min(100.0, getDouble(result, "matchPercentage")))
                     .skillMatchPercentage(getDouble(result, "skillMatchPercentage"))
                     .experienceMatchPercentage(getDouble(result, "experienceMatchPercentage"))

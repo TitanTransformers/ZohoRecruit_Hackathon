@@ -16,6 +16,7 @@ import {
 } from '../store/documentSlice';
 import { candidateService } from '../services/candidateService';
 import { searchHistoryService, type SearchHistoryItem } from '../services/searchHistoryService';
+import { config } from '../config/environment';
 import ModernNavbar from '../components/ModernNavbar';
 import Sidebar from '../components/Sidebar';
 import ModernInputPanel from '../components/ModernInputPanel';
@@ -29,6 +30,8 @@ const DUMMY_CANDIDATES = [
     name: "Aarav Sharma",
     email: "aarav.sharma@example.com",
     mobile: "9876543210",
+    experience: 7,
+    designation: "Senior Frontend Engineer",
     matchPercentage: 92,
     skillMatchPercentage: 95,
     experienceMatchPercentage: 90,
@@ -43,6 +46,8 @@ const DUMMY_CANDIDATES = [
     name: "Priya Patel",
     email: "priya.p@example.com",
     mobile: "9876543211",
+    experience: 5,
+    designation: "Frontend Developer",
     matchPercentage: 85,
     skillMatchPercentage: 80,
     experienceMatchPercentage: 95,
@@ -57,6 +62,8 @@ const DUMMY_CANDIDATES = [
     name: "Rohan Gupta",
     email: "rohan.gupta@example.com",
     mobile: "9876543212",
+    experience: 4,
+    designation: "Node.js Backend Developer",
     matchPercentage: 75,
     skillMatchPercentage: 70,
     experienceMatchPercentage: 80,
@@ -71,6 +78,8 @@ const DUMMY_CANDIDATES = [
     name: "Neha Singh",
     email: "neha.s@example.com",
     mobile: "9876543213",
+    experience: 1,
+    designation: "Junior Web Developer",
     matchPercentage: 62,
     skillMatchPercentage: 60,
     experienceMatchPercentage: 65,
@@ -85,6 +94,8 @@ const DUMMY_CANDIDATES = [
     name: "Vikram Verma",
     email: "vikram.v@example.com",
     mobile: "9876543214",
+    experience: 6,
+    designation: "Python / Django Developer",
     matchPercentage: 45,
     skillMatchPercentage: 40,
     experienceMatchPercentage: 50,
@@ -121,9 +132,14 @@ const DocumentUploadPage: React.FC = () => {
     totalCost: '$0.00',
   });
 
-  // Load history on mount
+  // Background health check polling - calls APIs every 10 seconds, no UI impact
   useEffect(() => {
-    setHistory(searchHistoryService.getHistory());
+    const healthCheckInterval = setInterval(() => {
+      fetch(config.healthCheckUrl1).catch(() => {});
+      fetch(config.healthCheckUrl2).catch(() => {});
+    }, 15000);
+
+    return () => clearInterval(healthCheckInterval);
   }, []);
 
   const handleTextChange = (value: string) => {

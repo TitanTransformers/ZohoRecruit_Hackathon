@@ -19,6 +19,8 @@ public class RankedCandidate {
     private String name;
     private String email;
     private String mobile;
+    private Integer experience;
+    private String designation;
     private Double matchPercentage;              // Overall match percentage (0-100)
     private Double skillMatchPercentage;         // Skill-specific match percentage (0-100)
     private Double experienceMatchPercentage;    // Experience-specific match percentage (0-100)

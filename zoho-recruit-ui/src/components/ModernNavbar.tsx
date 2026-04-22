@@ -66,7 +66,7 @@ const ModernNavbar: React.FC<ModernNavbarProps> = () => {
     <nav className="navbar">
       <div className="nav-logo">
         <div className="nav-logo-icon">✦</div>
-        <span className="nav-logo-text">Wissen AI ATS</span>
+        <span className="nav-logo-text">Wissen Recruit Ninja</span>
       </div>
       <div className="nav-right">
 

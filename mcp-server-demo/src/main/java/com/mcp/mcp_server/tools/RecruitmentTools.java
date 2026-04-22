@@ -222,6 +222,8 @@ public class RecruitmentTools {
             m.put("name", rc.getName());
             m.put("email", rc.getEmail());
             m.put("mobile", rc.getMobile() != null ? rc.getMobile() : "N/A");
+            m.put("experience", rc.getExperience());
+            m.put("designation", rc.getDesignation() != null ? rc.getDesignation() : "N/A");
             m.put("matchPercentage", rc.getMatchPercentage());
             m.put("skillMatchPercentage", rc.getSkillMatchPercentage() != null ? rc.getSkillMatchPercentage() : 0.0);
             m.put("experienceMatchPercentage", rc.getExperienceMatchPercentage() != null ? rc.getExperienceMatchPercentage() : 0.0);
@@ -259,8 +261,11 @@ public class RecruitmentTools {
         if (!jd.getRequiredSkills().isEmpty()) {
             criteria.put("skills", jd.getRequiredSkills().stream().limit(3).collect(Collectors.joining(",")));
         }
-        if (jd.getExperienceLevel() != null && !jd.getExperienceLevel().isBlank()) {
-            criteria.put("experience_level", jd.getExperienceLevel());
+        if (jd.getMinYearsOfExperience() != null) {
+            criteria.put("min_experience_years", String.valueOf(jd.getMinYearsOfExperience()));
+        }
+        if (jd.getMaxYearsOfExperience() != null) {
+            criteria.put("max_experience_years", String.valueOf(jd.getMaxYearsOfExperience()));
         }
         if (jd.getLocation() != null && !jd.getLocation().isBlank()) {
             criteria.put("location", jd.getLocation());

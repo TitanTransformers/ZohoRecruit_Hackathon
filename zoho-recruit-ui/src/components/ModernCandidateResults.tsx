@@ -74,8 +74,23 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, index }) => {
         <div className="card-info">
           <div className="card-name">{candidate.name}</div>
 
-          {/* Rank + CandidateId inline below name */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' as const }}>
+          {/* Designation */}
+          {candidate.designation && (
+            <div className="card-role" style={{ marginTop: 2 }}>
+              {candidate.designation}
+            </div>
+          )}
+
+          {/* Experience */}
+          {candidate.experience != null && (
+            <div style={{ marginTop: 3, fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span>🗓</span>
+              <span>{candidate.experience} yr{candidate.experience !== 1 ? 's' : ''} exp</span>
+            </div>
+          )}
+
+          {/* Rank + CandidateId inline */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, flexWrap: 'wrap' as const }}>
             {candidate.rankPosition != null && (
               <span style={{
                 fontSize: 10, fontWeight: 700, color: 'var(--accent-purple)',
@@ -90,12 +105,7 @@ const CandidateCard: React.FC<CandidateCardProps> = ({ candidate, index }) => {
             )}
           </div>
 
-          {/* matchReasoning as subtitle */}
-          {candidate.matchReasoning && (
-            <div className="card-role" title={candidate.matchReasoning} style={{ marginTop: 3 }}>
-              {candidate.matchReasoning.substring(0, 48)}{candidate.matchReasoning.length > 48 ? '…' : ''}
-            </div>
-          )}
+
         </div>
         <div className="match-ring-wrap">
           <div className="match-ring">
@@ -302,12 +312,12 @@ const ModernCandidateResults: React.FC<ModernCandidateResultsProps> = ({ candida
   const filtered = filter === 'all'
     ? candidates
     : candidates.filter(c => {
-        const pct = c.matchPercentage ?? 0;
-        if (filter === 'strong') return pct >= 80;
-        if (filter === 'possible') return pct >= 60 && pct < 80;
-        if (filter === 'weak') return pct < 60;
-        return true;
-      });
+      const pct = c.matchPercentage ?? 0;
+      if (filter === 'strong') return pct >= 80;
+      if (filter === 'possible') return pct >= 60 && pct < 80;
+      if (filter === 'weak') return pct < 60;
+      return true;
+    });
 
   const exportJSON = () => {
     const blob = new Blob([JSON.stringify(candidates, null, 2)], { type: 'application/json' });
