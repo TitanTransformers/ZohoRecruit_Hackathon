@@ -33,6 +33,10 @@ public class RankedCandidate {
 
     @JsonAlias({"experience_years", "experienceYears", "years_of_experience", "yearsOfExperience"})
     private Integer experience;
+
+    @JsonAlias({"current_designation", "currentDesignation", "job_title", "jobTitle", "current_job_title"})
+    private String designation;
+
     private Double matchPercentage;
 
     @JsonAlias({"skill_match_percentage", "skillMatch", "skill_match"})

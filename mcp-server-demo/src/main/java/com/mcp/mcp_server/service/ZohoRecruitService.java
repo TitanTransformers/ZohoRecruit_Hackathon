@@ -99,6 +99,24 @@ public class ZohoRecruitService {
                         }
                     }
 
+                    case "min_experience_years" -> {
+                        try {
+                            filter.addCondition(ZohoRecruitCandidateSearchField.EXPERIENCE_IN_YEARS,
+                                    ZohoCriteriaBuilder.Operator.GREATER_EQUAL, Integer.parseInt(value));
+                        } catch (NumberFormatException e) {
+                            log.warn("Invalid min experience value: {}. Skipping.", value);
+                        }
+                    }
+
+                    case "max_experience_years" -> {
+                        try {
+                            filter.addCondition(ZohoRecruitCandidateSearchField.EXPERIENCE_IN_YEARS,
+                                    ZohoCriteriaBuilder.Operator.LESS_EQUAL, Integer.parseInt(value));
+                        } catch (NumberFormatException e) {
+                            log.warn("Invalid max experience value: {}. Skipping.", value);
+                        }
+                    }
+
                     case "location", "city" -> filter.addLocation(value);
 
                     case "status", "candidate_status" -> filter.addStatus(value);
@@ -160,7 +178,7 @@ public class ZohoRecruitService {
                 }
             }
 
-            return filter.build();
+            return filter.buildWithOperator("and");
         } catch (Exception e) {
             log.error("Error building criteria with ZohoCriteriaBuilder", e);
             throw new IllegalArgumentException("Invalid search criteria: " + e.getMessage(), e);
