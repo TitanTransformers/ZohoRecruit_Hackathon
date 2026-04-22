@@ -135,6 +135,8 @@ class CandidateService {
         email: candidate.email || 'N/A',
         phone,
         mobile: candidate.mobile,
+        experience: typeof candidate.experience === 'number' ? candidate.experience : undefined,
+        designation: candidate.designation || undefined,
         rankPosition: candidate.rankPosition || 0,
         matchPercentage: Math.min(100, Math.max(0, matchPercentage)),
         skillMatchPercentage: typeof candidate.skillMatchPercentage === 'number'
