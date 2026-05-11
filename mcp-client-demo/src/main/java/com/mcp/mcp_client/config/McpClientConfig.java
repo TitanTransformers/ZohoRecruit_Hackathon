@@ -1,5 +1,6 @@
 package com.mcp.mcp_client.config;
 
+import com.mcp.mcp_client.advisor.CachingAdvisor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -14,18 +15,13 @@ public class McpClientConfig {
 
     /**
      * Configure ChatClient with MCP tool callbacks.
-     * <p>
-     * - ChatClient.Builder is auto-configured by Spring AI (uses the Anthropic ChatModel).
-     * - ToolCallbackProvider is auto-configured by spring-ai-starter-mcp-client and
-     *   exposes all tools discovered from connected MCP servers.
-     * <p>
-     * Spring AI handles the full tool-call loop automatically: when Claude requests a
-     * tool, the framework invokes it via MCP and feeds the result back to Claude.
+     * Spring AI auto-configures the Anthropic client and handles timeouts.
      */
     @Bean
-    ChatClient chatClient(ChatClient.Builder chatClientBuilder, ToolCallbackProvider tools) {
+    ChatClient chatClient(ChatClient.Builder chatClientBuilder, ToolCallbackProvider tools, CachingAdvisor cachingAdvisor) {
         logger.info("Configuring ChatClient with MCP tool callbacks");
         return chatClientBuilder
+                .defaultAdvisors(cachingAdvisor)
                 .defaultToolCallbacks(tools)
                 .build();
     }

@@ -8,7 +8,7 @@ export interface SearchHistoryItem {
 }
 
 const STORAGE_KEY = 'search_history';
-const MAX_HISTORY = 20;
+const MAX_HISTORY = 10;
 
 class SearchHistoryService {
   getHistory(): SearchHistoryItem[] {

@@ -1,5 +1,6 @@
 package com.mcp.mcp_server.config;
 
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -13,13 +14,14 @@ import java.util.Map;
  *   curl http://localhost:8080/health
  */
 @RestController
+@CrossOrigin
 public class HealthController {
 
     @GetMapping("/health")
     public Map<String, Object> health() {
         return Map.of(
                 "status", "UP",
-                "service", "mysql-mcp-server",
+                "service", "recruitment-mcp-server",
                 "timestamp", Instant.now().toString(),
                 "endpoints", Map.of(
                         "mcp", "/mcp",

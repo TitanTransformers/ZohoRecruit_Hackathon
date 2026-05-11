@@ -16,66 +16,50 @@ import { styled } from '@mui/material/styles';
 import type { CandidateProfile } from '../types/candidate';
 
 // Styled Components
-const ResultsTableContainer = styled(TableContainer)(({ theme }) => ({
-  marginTop: theme.spacing(2),
-  borderRadius: '12px',
-  background: theme.palette.mode === 'light'
-    ? 'rgba(255, 255, 255, 0.95)'
-    : 'rgba(255, 255, 255, 0.04)',
-  backdropFilter: 'blur(10px)',
-  border: `1px solid ${theme.palette.divider}`,
+const ResultsTableContainer = styled(TableContainer)(() => ({
+  marginTop: '16px',
+  borderRadius: '8px',
+  background: 'rgba(255, 255, 255, 0.018)',
+  backdropFilter: 'blur(20px) saturate(160%)',
+  border: '1px solid rgba(255, 255, 255, 0.07)',
   width: '100%',
   overflow: 'auto',
-  boxShadow: theme.palette.mode === 'light'
-    ? '0 4px 12px rgba(99, 102, 241, 0.08)'
-    : '0 4px 12px rgba(99, 102, 241, 0.15)',
-  [theme.breakpoints.down('sm')]: {
-    borderRadius: '10px',
-  },
+  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
 }));
 
-const StyledTableHead = styled(TableHead)(({ theme }) => ({
+const StyledTableHead = styled(TableHead)(() => ({
   '& .MuiTableCell-head': {
-    background: `linear-gradient(135deg, ${theme.palette.primary.main}15 0%, ${theme.palette.primary.main}08 100%)`,
-    fontWeight: 700,
-    color: theme.palette.primary.main,
-    borderBottom: `1.5px solid ${theme.palette.primary.main}30`,
+    background: 'rgba(184, 147, 90, 0.06)',
+    fontWeight: 600,
+    color: '#B8935A',
+    borderBottom: '1px solid rgba(184, 147, 90, 0.2)',
     whiteSpace: 'nowrap',
-    padding: theme.spacing(1.75, 2),
-    fontSize: '0.95rem',
-    [theme.breakpoints.down('sm')]: {
-      fontSize: '0.85rem',
-      padding: theme.spacing(1.5, 1),
-    },
+    padding: '14px 16px',
+    fontSize: '0.72rem',
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase',
   },
 }));
 
-const StyledTableRow = styled(TableRow)(({ theme }) => ({
-  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+const StyledTableRow = styled(TableRow)(() => ({
+  transition: 'background-color 200ms ease',
   '&:hover': {
-    background: theme.palette.mode === 'light'
-      ? 'rgba(99, 102, 241, 0.06)'
-      : 'rgba(129, 140, 248, 0.1)',
+    background: 'rgba(184, 147, 90, 0.04)',
   },
   '& .MuiTableCell-body': {
-    padding: theme.spacing(1.75, 2),
-    fontSize: '0.95rem',
-    [theme.breakpoints.down('sm')]: {
-      padding: theme.spacing(1.25, 1),
-      fontSize: '0.85rem',
-    },
+    padding: '12px 16px',
+    fontSize: '0.875rem',
+    color: '#EAE8E2',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
   },
 }));
 
-const SkillChip = styled(Chip)(({ theme }) => ({
-  margin: theme.spacing(0.5),
-  fontSize: '0.8rem',
+const SkillChip = styled(Chip)(() => ({
+  margin: '2px',
+  fontSize: '0.7rem',
   fontWeight: 500,
-  borderRadius: '6px',
-  [theme.breakpoints.down('sm')]: {
-    fontSize: '0.7rem',
-    margin: theme.spacing(0.3),
-  },
+  borderRadius: '4px',
+  letterSpacing: '0.04em',
 }));
 
 const MatchPercentageCell = styled(Box)(({ theme }) => ({

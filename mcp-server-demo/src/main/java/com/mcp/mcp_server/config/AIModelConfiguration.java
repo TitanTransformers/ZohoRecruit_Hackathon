@@ -1,12 +1,16 @@
 package com.mcp.mcp_server.config;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -46,19 +50,41 @@ public class AIModelConfiguration {
     }
 
     /**
-     * ObjectMapper for JSON processing in AI services
+     * ObjectMapper for JSON processing in AI services.
+     * Defined explicitly as the MCP server starter may not trigger Jackson auto-configuration.
      */
     @Bean
+    @ConditionalOnMissingBean
     public ObjectMapper objectMapper() {
-        return new ObjectMapper();
+        ObjectMapper objectMapper = new ObjectMapper();
+        // Be lenient with AI-generated JSON
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
+        objectMapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
+        objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+        objectMapper.configure(JsonParser.Feature.ALLOW_TRAILING_COMMA, true);
+        return objectMapper;
     }
 
     /**
-     * RestTemplate for HTTP calls
+     * RestTemplate with extended connection and read timeouts for Zoho Recruit API calls
+     * Zoho API can be slow when searching large candidate pools or during peak load.
+     *
+     * Timeouts:
+     * - Connect: 5 seconds (establish TCP connection)
+     * - Read: 60 seconds (wait for response from Zoho server)
+     *
+     * If timeouts still occur:
+     * - Increase ZOHO_READ_TIMEOUT environment variable (in milliseconds)
+     * - Reduce pageSize in search requests
+     * - Consider pagination for large result sets
      */
     @Bean
     public RestTemplate restTemplate() {
-        return new RestTemplate();
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5_000);    // 5 seconds to establish connection
+        factory.setReadTimeout(60_000);      // 60 seconds to read response (increased from 15s)
+        return new RestTemplate(factory);
     }
 }
 

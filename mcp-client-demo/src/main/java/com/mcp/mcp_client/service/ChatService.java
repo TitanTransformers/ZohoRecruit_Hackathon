@@ -1,22 +1,13 @@
 package com.mcp.mcp_client.service;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mcp.mcp_client.dto.ChatRequest;
-import com.mcp.mcp_client.dto.ChatResponse;
-import com.mcp.mcp_client.dto.PaginatedResponse;
 import com.mcp.mcp_client.dto.RankedCandidate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
-import org.xml.sax.InputSource;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,9 +18,7 @@ import java.util.regex.Pattern;
 public class ChatService {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatService.class);
-    private static final ObjectMapper objectMapper;
-    private static final Pattern JSON_CODE_BLOCK_PATTERN = Pattern.compile("```json\\s*\\n([\\s\\S]*?)\\n```");
-    private static final Pattern XML_CODE_BLOCK_PATTERN = Pattern.compile("```xml\\s*\\n([\\s\\S]*?)\\n```");
+    private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final Pattern PAGE_SIZE_PATTERN = Pattern.compile(
             "(?:top|first|show|display|list|get|fetch|return|give me|find)\\s+(\\d+)|" +
                     "(\\d+)\\s+(?:candidates|results|records|entries|people|profiles|resumes)",
@@ -38,15 +27,6 @@ public class ChatService {
 
     private final ChatClient chatClient;
 
-    static {
-        objectMapper = new ObjectMapper();
-        // Be lenient with AI-generated JSON
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
-        objectMapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
-        objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
-        objectMapper.configure(JsonParser.Feature.ALLOW_TRAILING_COMMA, true);
-    }
     public ChatService(ChatClient chatClient) {
         this.chatClient = chatClient;
 
@@ -57,197 +37,154 @@ public class ChatService {
      * Process a user message through Claude with MCP tools automatically available.
      * Spring AI handles tool calling internally — when Claude requests a tool,
      * the framework invokes it via MCP and returns the result back to Claude.
+     *
+     * OPTIMIZATION: Get raw text content and extract JSON directly instead of
+     * using Spring's entity deserialization (which was taking 145+ seconds)
      */
-    public Object chat(ChatRequest chatRequest) {
+    public List<RankedCandidate> chat(ChatRequest chatRequest) {
+        long totalStart = System.currentTimeMillis();
         logger.info("Processing chat message: {}", chatRequest.getMessage());
 
         try {
+            long pageExtractStart = System.currentTimeMillis();
             int requestPageSize = extractPageSizeFromPrompt(chatRequest.getMessage());
             if (requestPageSize <= 0) {
                 requestPageSize = chatRequest.getPageSize() > 0 ? chatRequest.getPageSize() : 10;
             }
-            logger.info("Resolved page size: {} from user prompt", requestPageSize);
+            long pageExtractTime = System.currentTimeMillis() - pageExtractStart;
+            logger.info("Resolved page size: {} from user prompt (took {} ms)", requestPageSize, pageExtractTime);
 
-            List<RankedCandidate> response = chatClient.prompt()
-                    .system("You are a helpful AI assistant with access to MCP (Model Context Protocol) tools. " +
-                            "Use the available tools when needed to answer the user's questions accurately. " +
-                            "The user has requested a page size of " + requestPageSize + " results. " +
-                            "Please return up to " + requestPageSize + " most relevant candidates.")
-                    .user(chatRequest.getMessage())
-                    .call()
-                    .entity(new ParameterizedTypeReference<>() {
-                    });
+            long promptBuildStart = System.currentTimeMillis();
+            var prompt = chatClient.prompt()
+                    .system("INSTRUCTIONS: You MUST output the exact raw JSON array from the MCP tool result. " +
+                            "Do NOT reformat, analyze, explain, or modify it in any way. " +
+                            "Output ONLY the JSON array. No prefix. No suffix. No explanation. " +
+                            "Preserve exact formatting and content from the tool.")
+                    .user(chatRequest.getMessage() + " Limit to " + requestPageSize + " results.");
+            long promptBuildTime = System.currentTimeMillis() - promptBuildStart;
+            logger.info("Prompt building took {} ms", promptBuildTime);
 
-            logger.info("Claude response received successfully");
+            long callStart = System.currentTimeMillis();
+            // Get content as String directly using the simpler API
+            String rawContent = prompt.call().content();
+            long callTime = System.currentTimeMillis() - callStart;
+            logger.info(">>> Prompt.call() (includes Claude processing) took {} ms <<<", callTime);
 
-            // Extract JSON data from response and convert to RankedCandidate list
-            List<RankedCandidate> candidates = extractCandidatesFromResponse(response);
+            // FAST PATH: Extract JSON directly from raw content instead of deserializing
+            long parseStart = System.currentTimeMillis();
+            if (rawContent != null) {
+                logger.debug("Raw content length: {} characters", rawContent.length());
+            } else {
+                logger.warn("Raw content is null");
+                return List.of();
+            }
 
-            // Set page size: use the smaller of request page size or total candidates count
-            // This ensures we get meaningful pagination based on actual data
-            int pageSize = Math.min(candidates.size(), requestPageSize); // Min 5 items per page
-            // Use requested page size
-            // If total is less than requested, use total
+            List<RankedCandidate> result = extractCandidatesFromRawContent(rawContent);
+            long parseTime = System.currentTimeMillis() - parseStart;
+            logger.info(">>> JSON extraction and parsing took {} ms <<<", parseTime);
 
-            logger.info("Setting page size to {} (actual data size) for {} total candidates", pageSize, candidates.size());
+            logger.info("Result contains {} candidates", result.size());
 
-            // Create paginated response for the first page
+            long totalTime = System.currentTimeMillis() - totalStart;
+            logger.info("===== TOTAL CHAT TIME: {} ms (PromptBuild: {} ms, Call: {} ms, Parse: {} ms) =====",
+                    totalTime, promptBuildTime, callTime, parseTime);
 
-            return createPaginatedResponse(candidates, pageSize);
-
+            return result;
         } catch (Exception e) {
             logger.error("Error processing chat request", e);
-            return ChatResponse.builder().response(
-                    "Error processing your request: " + e.getMessage()
-            ).build();
+            long totalTime = System.currentTimeMillis() - totalStart;
+            logger.error("Total time before error: {} ms", totalTime);
+            return List.of();
         }
     }
 
     /**
-     * Extract candidates from the Claude response (from JSON code blocks or direct object)
-     * @param response The response text from Claude or the response object
-     * @return List of RankedCandidate objects
+     * Extract and parse RankedCandidate objects from raw JSON string quickly.
+     * Handles both complete candidate objects and simple string arrays.
      */
-    private List<RankedCandidate> extractCandidatesFromResponse(Object response) {
+    private List<RankedCandidate> extractCandidatesFromRawContent(String content) {
         List<RankedCandidate> candidates = new ArrayList<>();
 
-        try {
-            // Check if response is already a List of RankedCandidate
-            if (response instanceof List<?> dataList) {
-                for (Object item : dataList) {
-                    if (item instanceof RankedCandidate) {
-                        candidates.add((RankedCandidate) item);
-                    } else {
-                        // Try to convert from map/json
-                        RankedCandidate candidate = objectMapper.convertValue(item, RankedCandidate.class);
-                        candidates.add(candidate);
-                    }
-                }
-                logger.info("Extracted {} candidates from response", candidates.size());
-            } else if (response instanceof String responseStr) {
-                // If it's a string, try to extract JSON from code blocks
-                Object extractedData = extractJsonFromResponse(responseStr);
+        if (content == null || content.isBlank()) {
+            logger.warn("Empty content received");
+            return candidates;
+        }
 
-                if (extractedData instanceof List<?> dataList) {
-                    for (Object item : dataList) {
-                        RankedCandidate candidate = objectMapper.convertValue(item, RankedCandidate.class);
-                        candidates.add(candidate);
+        try {
+            // Find the JSON array boundaries manually for reliability
+            String jsonStr = extractJsonArray(content);
+            if (jsonStr == null) {
+                logger.warn("No JSON array found in content");
+                logger.debug("Raw content: {}", content.substring(0, Math.min(500, content.length())));
+                return candidates;
+            }
+
+            logger.debug("Found JSON array: {} characters", jsonStr.length());
+            long deserializeStart = System.currentTimeMillis();
+            @SuppressWarnings("unchecked")
+            List<Object> parsedList = objectMapper.readValue(jsonStr, List.class);
+            long deserializeTime = System.currentTimeMillis() - deserializeStart;
+            logger.debug("Array deserialization took {} ms for {} items", deserializeTime, parsedList.size());
+
+            for (int i = 0; i < parsedList.size(); i++) {
+                Object item = parsedList.get(i);
+                try {
+                    RankedCandidate candidate;
+
+                    // Handle different response formats
+                    if (item instanceof String) {
+                        // Simple string: create a basic RankedCandidate with the name
+                        candidate = RankedCandidate.builder()
+                                .name((String) item)
+                                .candidateId(String.valueOf(i + 1))
+                                .rankPosition(i + 1)
+                                .build();
+                        logger.debug("Created candidate from string: {}", item);
+                    } else if (item instanceof Map) {
+                        // Object with properties: deserialize as RankedCandidate
+                        candidate = objectMapper.convertValue(item, RankedCandidate.class);
+                    } else {
+                        logger.warn("Unexpected item type: {} (value: {})", item.getClass().getSimpleName(), item);
+                        continue;
                     }
-                    logger.info("Extracted {} candidates from JSON response", candidates.size());
-                } else if (extractedData instanceof Map) {
-                    // If it's a single object, wrap it in a list
-                    RankedCandidate candidate = objectMapper.convertValue(extractedData, RankedCandidate.class);
+
                     candidates.add(candidate);
-                    logger.info("Extracted 1 candidate from response");
+                } catch (Exception e) {
+                    logger.warn("Failed to convert item to RankedCandidate: {}", e.getMessage());
                 }
-            } else if (response instanceof Map) {
-                // Handle single candidate as Map
-                RankedCandidate candidate = objectMapper.convertValue(response, RankedCandidate.class);
-                candidates.add(candidate);
-                logger.info("Extracted 1 candidate from response");
             }
         } catch (Exception e) {
-            logger.warn("Failed to extract candidates from response: {}", e.getMessage());
+            logger.error("Error extracting candidates from raw content: {}", e.getMessage());
         }
 
         return candidates;
     }
 
     /**
-     * Create a paginated response from a list of candidates
-     *
-     * @param allCandidates The complete list of candidates
-     * @param pageSize      The size of each page
-     * @return PaginatedResponse object with pagination metadata
+     * Extract JSON array string by finding matching [ ] brackets.
+     * More reliable than regex for large/nested JSON.
      */
-    private PaginatedResponse createPaginatedResponse(List<RankedCandidate> allCandidates, int pageSize) {
-        logger.debug("Creating paginated response for page {} with page size {}", 0, pageSize);
+    private String extractJsonArray(String content) {
+        int start = content.indexOf('[');
+        if (start == -1) return null;
 
-        int totalItems = allCandidates.size();
-        int totalPages = (int) Math.ceil((double) totalItems / pageSize);
-
-        int startIndex = 0;
-        int endIndex = Math.min(startIndex + pageSize, totalItems);
-
-        // Get candidates for this page
-        List<RankedCandidate> pageCandidates = allCandidates.subList(startIndex, endIndex);
-
-        boolean hasNext = 0 < totalPages - 1;
-        boolean hasPrevious = false;
-
-        return PaginatedResponse.builder()
-                .candidates(pageCandidates)
-                .page(0)
-                .pageSize(pageSize)
-                .totalPages(totalPages)
-                .totalItems(totalItems)
-                .hasNext(hasNext)
-                .hasPrevious(hasPrevious)
-                .build();
-    }
-
-    /**
-     * Extract JSON data from markdown code blocks in the response.
-     * Returns the parsed JSON object if found, otherwise null.
-     */
-    private Object extractJsonFromResponse(String response) {
-        try {
-            Matcher matcher = JSON_CODE_BLOCK_PATTERN.matcher(response);
-
-            if (matcher.find()) {
-                String jsonStr = matcher.group(1).trim();
-                logger.debug("Found JSON code block, parsing...");
-
-                try {
-                    // Try to parse as JSON
-                    JsonNode jsonNode = objectMapper.readTree(jsonStr);
-                    logger.debug("Successfully parsed JSON data");
-
-                    // If it's an array or object, return the parsed structure
-                    if (jsonNode.isArray() || jsonNode.isObject()) {
-                        return objectMapper.readValue(jsonStr, Object.class);
-                    }
-                } catch (Exception e) {
-                    logger.warn("Failed to parse extracted JSON: {}", e.getMessage());
+        int depth = 0;
+        for (int i = start; i < content.length(); i++) {
+            char c = content.charAt(i);
+            if (c == '[') depth++;
+            else if (c == ']') {
+                depth--;
+                if (depth == 0) {
+                    return content.substring(start, i + 1);
                 }
             }
-        } catch (Exception e) {
-            logger.debug("Error extracting JSON from response: {}", e.getMessage());
         }
-
+        // If brackets don't close (truncated response), return null
+        logger.warn("JSON array appears truncated (unclosed brackets)");
         return null;
     }
 
-    /**
-     * Extract XML data from markdown code blocks in the response.
-     * Returns the XML as a string (NOT converted to JSON).
-     * Returns null if no XML found.
-     */
-    private String extractXmlFromResponse(String response) {
-        try {
-            Matcher matcher = XML_CODE_BLOCK_PATTERN.matcher(response);
 
-            if (matcher.find()) {
-                String xmlStr = matcher.group(1).trim();
-                logger.debug("Found XML code block");
-
-                // Validate it's valid XML
-                try {
-                    DocumentBuilderFactory.newInstance()
-                            .newDocumentBuilder()
-                            .parse(new InputSource(new StringReader(xmlStr)));
-                    logger.debug("Successfully validated XML data");
-                    return xmlStr;
-                } catch (Exception e) {
-                    logger.warn("Failed to validate extracted XML: {}", e.getMessage());
-                }
-            }
-        } catch (Exception e) {
-            logger.debug("Error extracting XML from response: {}", e.getMessage());
-        }
-
-        return null;
-    }
 
     /**
      * Extract page size from the user's natural language prompt.

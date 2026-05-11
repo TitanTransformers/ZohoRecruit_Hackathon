@@ -23,6 +23,8 @@ public class McpServerToolProviderConfig {
      *   - searchCandidatesInZohoRecruit
      *   - findAndRankCandidatesForJD
      *   - generateSearchFiltersFromJD
+     *   - getDetailedCandidateFitAnalysis
+     *   - generateCustomInterviewQuestions
      */
     @Bean
     public ToolCallbackProvider recruitmentToolProvider(RecruitmentTools recruitmentTools) {

@@ -34,7 +34,7 @@ public class ZohoRecruitOAuthService {
      * Get valid OAuth access token for Zoho Recruit API
      * Returns cached token if valid, otherwise fetches a new one
      */
-    public String getAccessToken() {
+    public synchronized String getAccessToken() {
         if (isTokenValid()) {
             log.debug("Using cached access token");
             return accessToken;

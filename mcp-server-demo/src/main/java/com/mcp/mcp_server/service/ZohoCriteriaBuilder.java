@@ -326,6 +326,10 @@ public class ZohoCriteriaBuilder {
             return addCondition(ZohoRecruitCandidateSearchField.COUNTRY, Operator.EQUALS, country);
         }
 
+        public boolean isEmpty() {
+            return conditions.isEmpty();
+        }
+
         public String build() {
             return buildWithOperator("or");
         }

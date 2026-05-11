@@ -22,27 +22,24 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import type { SearchHistoryItem } from '../services/searchHistoryService';
 
-const HistoryCard = styled(Card)(({ theme }) => ({
-  background: theme.palette.mode === 'light'
-    ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(99, 102, 241, 0.02) 100%)'
-    : 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0.03) 100%)',
-  border: `1px solid ${theme.palette.divider}`,
-  backdropFilter: 'blur(8px)',
-  transition: 'all 0.3s ease',
+const HistoryCard = styled(Card)(() => ({
+  background: 'rgba(255, 255, 255, 0.018)',
+  border: '1px solid rgba(255, 255, 255, 0.07)',
+  backdropFilter: 'blur(20px) saturate(160%)',
+  borderRadius: '8px',
+  transition: 'border-color 200ms ease, box-shadow 200ms ease',
   '&:hover': {
-    borderColor: theme.palette.primary.main,
-    boxShadow: theme.palette.mode === 'light'
-      ? '0 4px 12px rgba(99, 102, 241, 0.1)'
-      : '0 4px 12px rgba(129, 140, 248, 0.15)',
+    borderColor: 'rgba(184, 147, 90, 0.3)',
+    boxShadow: '0 8px 32px rgba(184, 147, 90, 0.1)',
   },
 }));
 
-const HistoryListItem = styled(ListItemButton)(({ theme }) => ({
-  borderRadius: '8px',
-  marginBottom: '8px',
-  transition: 'all 0.2s ease',
+const HistoryListItem = styled(ListItemButton)(() => ({
+  borderRadius: '4px',
+  marginBottom: '4px',
+  transition: 'background-color 200ms ease',
   '&:hover': {
-    background: theme.palette.action.hover,
+    background: 'rgba(184, 147, 90, 0.06)',
   },
 }));
 
@@ -94,9 +91,9 @@ const SearchHistory: React.FC<SearchHistoryProps> = ({
           onClick={() => setExpanded(!expanded)}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <HistoryIcon color="primary" />
+            <HistoryIcon sx={{ color: '#B8935A' }} />
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, fontFamily: 'var(--font-display)', letterSpacing: '0.02em', color: '#EAE8E2' }}>
                 Recent Searches
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -187,7 +184,7 @@ const SearchHistory: React.FC<SearchHistoryProps> = ({
                 variant="outlined"
                 size="small"
                 onClick={onClear}
-                sx={{ flex: 1, textTransform: 'none' }}
+                sx={{ flex: 1, textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.7rem', borderColor: 'rgba(255,255,255,0.07)', color: '#6C6A7E', '&:hover': { borderColor: '#B8935A', color: '#EAE8E2' } }}
               >
                 Clear All
               </Button>
